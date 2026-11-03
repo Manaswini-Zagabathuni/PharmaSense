@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 pharmasense-api = "pharmasense.api.main:run"
+pharmasense-faers-inspect = "pharmasense.ingestion.faers.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["packages"]

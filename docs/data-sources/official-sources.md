@@ -13,9 +13,9 @@ report-source information.
 - [FDA AEMS quarterly data extract files](https://fis.fda.gov/extensions/FPD-QDE-FAERS/FPD-QDE-FAERS.html)
 - [FDA quarterly file documentation](https://www.fda.gov/drugs/fda-adverse-event-monitoring-system-aems/faers-quarterly-data-files-documentation)
 
-The verified formats, proposed pilot quarter, format-era boundaries, and source limitations are
-documented in [FAERS/AEMS quarterly extracts](faers-quarterly-extracts.md). No archive was
-downloaded during Phase 1A.
+The verified format, 2023 Q4 pilot, format-era boundaries, checksum, and source limitations are
+documented in [FAERS/AEMS quarterly extracts](faers-quarterly-extracts.md). The archive is retained
+only in ignored local raw storage; Git contains an aggregate manifest, not FDA records.
 
 The bulk archives, not the openFDA API, will be the reproducible analytical baseline.
 

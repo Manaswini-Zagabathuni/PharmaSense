@@ -13,9 +13,10 @@ safety actions and labeling evidence.
 > A reporting association is not proof of causation, incidence, or comparative safety. Do not
 > use this project to diagnose, treat, prescribe, or change medication.
 
-Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design and testable format
-contracts for a future FDA quarterly-extract ingestion pipeline. It does not download or ingest
-FDA data and does not calculate signals. See [the architecture](docs/architecture/overview.md),
+Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design and Phase 1B adds a
+streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII archive. It does
+not load data into MySQL and does not calculate signals. See
+[the architecture](docs/architecture/overview.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
 [proposed schema](docs/architecture/faers-schema.md),
 [official data sources](docs/data-sources/official-sources.md), and
@@ -106,6 +107,24 @@ frontend declaration and lock together, then verify installation in a clean envi
 Only public, redistributable sources may be used. Never import restricted patient data or export
 data from controlled research environments. Downloaded archives and derived datasets belong in
 the ignored `data/raw` and `data/processed` directories.
+
+## FAERS 2023 Q4 local inspection
+
+The raw archive is intentionally not distributed with the repository. After independently
+downloading the approved file from FDA, verify its SHA-256 is
+`7e6b72848ed670900eaf78d24983c845f077091f71ffa7b9c310d590faebac62` and place it at
+`data/raw/faers/2023Q4/faers_ascii_2023Q4.zip`. Then run:
+
+```bash
+python -m pharmasense.ingestion.faers.cli \
+  data/raw/faers/2023Q4/faers_ascii_2023Q4.zip \
+  --json-report data/processed/faers/2023Q4/quality-report.json \
+  --markdown-report data/processed/faers/2023Q4/quality-report.md
+```
+
+Both outputs are aggregate local artifacts and remain ignored. Identical reruns leave existing
+report files unchanged. See [Phase 1B verification](docs/phase-1b-verification.md) for observed
+archive facts and limitations.
 
 ## License
 

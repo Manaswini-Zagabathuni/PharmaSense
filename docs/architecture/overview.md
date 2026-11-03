@@ -5,7 +5,9 @@
 PharmaSense begins as a modular monolith with independently runnable ingestion, normalization,
 analysis, evaluation, API, and retrieval packages. Phase 0 implements only the web shell, API
 system endpoints, database infrastructure, migrations, and development tooling. Phase 1A adds
-reviewed ingestion contracts and design documentation only; it does not download or load data.
+reviewed ingestion contracts and design documentation. Phase 1B adds local immutable acquisition,
+streaming parsing, and aggregate quality reporting for one approved quarter; it does not load
+records into MySQL.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.

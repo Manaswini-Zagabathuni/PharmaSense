@@ -1,7 +1,7 @@
 # Proposed FAERS relational schema
 
-This is a Phase 1A design, not an applied migration. Phase 1B must implement it in a new Alembic
-revision after verifying the selected archive's README. Identifiers from FDA are stored as opaque
+This is a design, not an applied migration. Phase 1B verified it against the selected archive but
+did not implement database persistence. Identifiers from FDA are stored as opaque
 strings even when they currently contain digits, preventing loss of leading zeros or future
 format assumptions. All timestamps are UTC.
 
@@ -24,7 +24,8 @@ transactional by member/batch, and a completed idempotency key is a no-op with a
 | --- | --- |
 | `faers_case` | PK `case_id`; first/last observed quarter and timestamps only—no destructive “current report” copy |
 | `faers_report_version` | PK `primary_id`; FK `case_id`; nullable parsed `case_version`; quarter/artifact/member/run FKs; source row number; FDA dates in raw text plus nullable parsed values; all other DEMO source fields; unique `(case_id, case_version)` only when version is present and verified unique |
-| `faers_drug` | Surrogate PK; FK `primary_id`; `drug_seq`; original `role_code`, `drug_name`, active ingredient, route, dose, and other DRUG values; source row number; unique `(primary_id, drug_seq)` after verification |
+| `faers_drug_sequence` | Grouping key `(primary_id, drug_seq)` for relationships to THER and INDI; not a claim that only one DRUG source row exists |
+| `faers_drug` | Surrogate PK; FK to `faers_drug_sequence`; original `role_code`, `drug_name`, active ingredient, route, dose, and other DRUG values; source row number; unique only by source member and row number |
 | `faers_reaction` | Surrogate PK; FK `primary_id`; original `preferred_term`; optional source fields; source row number; unique `(source_member_id, source_row_number)` |
 | `faers_outcome` | Surrogate PK; FK `primary_id`; original outcome code; source row number; unique `(source_member_id, source_row_number)` |
 | `faers_therapy` | Surrogate PK; FK (`primary_id`, `drug_seq`) to DRUG; original start/end/duration text plus nullable parsed values; source row number |
@@ -37,7 +38,13 @@ immutable system of record.
 
 Foreign keys use `RESTRICT` for source provenance and report parents. Canonical source rows are
 not cascade-deleted. Indexes cover `case_id`, `(case_id, case_version)`, report foreign keys,
-`(primary_id, role_code)`, and exact original drug/reaction text where MySQL index length permits.
+`(primary_id, drug_seq)`, `(primary_id, role_code)`, and exact original drug/reaction text where
+MySQL index length permits.
+
+Phase 1B invalidated the earlier provisional uniqueness proposal for `(primary_id, drug_seq)`.
+FDA documents one or more DRUG rows per sequence for direct reports with multiple dose, route, or
+frequency details; 2023 Q4 contains 185 repeated sequence identifiers. Persistence must retain
+every source row and link THER/INDI through the grouping table. No migration is part of Phase 1B.
 
 ## Version and duplicate policy
 

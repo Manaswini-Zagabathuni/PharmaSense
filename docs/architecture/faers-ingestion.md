@@ -1,96 +1,96 @@
 # FAERS ingestion architecture
 
-Phase 1B should implement one bounded command in the existing modular monolith, not a new service.
-The API will not perform bulk ingestion in request handlers.
+Phase 1B implements one bounded inspection command in the existing modular monolith, not a new
+service. The API does not perform bulk ingestion in request handlers. Database staging,
+migrations, and canonical persistence remain deferred.
 
-## Components
+## Implemented flow
 
 ```text
-FDA QDE index -> catalog resolver -> downloader -> immutable raw artifact
-                                           |-> archive/header validator
-                                           |-> streaming table parser
-                                           |-> row validator/transformer
-                                           |-> staged persistence -> canonical promotion
-                                           `-> reconciliation + quality report
+FDA QDE index -> verified URL -> immutable raw ZIP
+                                      |-> safe archive/header inspection
+                                      |-> streaming table parser
+                                      |-> temporary relationship-key index
+                                      `-> deterministic JSON + Markdown quality reports
 ```
 
-- **Catalog resolver:** accepts an allowlisted FDA URL and explicit year/quarter/format; captures
-  the landing-page and resolved archive URLs. It never chooses “latest” implicitly.
-- **Downloader:** HTTPS only, bounded redirects/size/timeouts, streamed SHA-256, temporary file,
-  ZIP validation, and atomic promotion. No extraction paths are trusted.
-- **Archive validator:** rejects encryption, path traversal, links, duplicate normalized names,
-  decompression-ratio/size limit violations, missing required members, and header drift.
-- **Parser:** streams the dollar-delimited ASCII members, retains line numbers and source tokens,
-  validates row width, and does not normalize drug or reaction text.
-- **Validator/transformer:** enforces structural keys and relationships, performs explicit
-  precision-aware date parsing, and emits accepted rows or typed issues/rejections.
-- **Persistence:** writes bounded batches to run-scoped staging tables with SQLAlchemy Core
-  parameter binding, reconciles counts/keys, then promotes transactionally to canonical tables.
-- **Reporter:** writes a machine-readable manifest plus a human-readable summary of checksums,
-  versions, counts, timings, issues, and final status. It never claims scientific validation.
+- **Acquisition:** the approved HTTPS URL was resolved from FDA's index. The archive downloaded to
+  a temporary suffix, passed ZIP CRC validation, received a SHA-256, and was then promoted under
+  ignored raw storage.
+- **Archive validator:** rejects path traversal, encryption, duplicate normalized paths, missing
+  required tables, mixed quarters, and header drift. It never extracts source rows to the working
+  tree.
+- **Parser:** streams unquoted, dollar-delimited ASCII directly from the ZIP; preserves source
+  strings, filenames, and row numbers; and emits every line as an accepted `SourceRecord` or a
+  `RejectedRecord` with a stable error code.
+- **Quality analyzer:** keeps counters in memory and writes only identifiers, relationship keys,
+  and hashes to temporary SQLite. Complete source records are never accumulated in memory.
+- **Reporter:** atomically writes aggregate JSON and Markdown. Report identity is derived from the
+  archive checksum and parser version; identical reruns do not rewrite existing reports.
 
-Module target:
+Implemented modules:
 
 ```text
 packages/pharmasense/ingestion/faers/
-  catalog.py       # explicit source metadata
-  download.py      # safe immutable acquisition
-  archive.py       # ZIP and member validation
-  parser.py        # streaming source records
-  validation.py    # structural and field-level decisions
-  transform.py     # typed, lossless transformations
-  persistence.py   # staging, reconciliation, promotion
-  reporting.py     # manifests and quality summaries
-  service.py       # orchestration independent of CLI/HTTP
+  archive.py        # safe ZIP inventory, period resolution, streaming checksum
+  specification.py  # verified 2023 Q4 columns and relationships
+  parser.py         # accepted/rejected streaming source events
+  quality.py        # aggregate validation and temporary relationship index
+  reporting.py      # deterministic machine/human reports
+  cli.py            # local orchestration independent of HTTP
 ```
 
 ## Workflow and failure semantics
 
-1. Resolve an explicit catalog entry; create a pending run.
-2. Download once to temporary storage, hash while streaming, validate, then make immutable.
-3. Read the included README and validate expected members/headers before row persistence.
-4. Load DEMO first, then DRUG/REAC/OUTC, then THER/INDI so parent integrity can be checked.
-5. Parse and persist in bounded batches to run staging; record every rejected line and issue.
-6. Reconcile source rows against accepted plus rejected rows and validate FK/key counts.
-7. Promote in a transaction; mark complete only after reconciliation and report creation.
-8. On failure, retain the artifact, run metadata, and diagnostic counts; canonical tables remain
-   unchanged. Retry uses the same artifact hash and a new attempt linked to the idempotency key.
+1. Require an explicit local archive path; never choose “latest” implicitly.
+2. Validate ZIP paths, encryption state, table membership, year, quarter, and exact headers.
+3. Scan DEMO first, followed by DRUG, REAC, OUTC, THER, and INDI.
+4. Preserve values exactly; validate only structural keys, verified code/date formats, and row
+   width. Unknown or malformed values receive stable issue codes rather than invented defaults.
+5. Store only keys in a temporary on-disk index and check report parents, child `CASEID`, and
+   THER/INDI drug-sequence relationships after streaming.
+6. Require `source rows = accepted + rejected` for every table. Relationship-invalid rows are
+   reported separately and never silently disappear from the parser stream.
+7. Write reports atomically. If the run fails, the immutable ZIP remains and no database state is
+   partially modified.
 
-Database credentials come only from existing environment configuration. Logs contain run IDs,
-hash prefixes, and aggregate counts—not raw records, credentials, URLs with secrets, or full
-quarantine payloads.
+The quality report's “accepted” count means structurally parseable, not scientifically verified or
+approved for later persistence. Duplicate or repeated rows remain accepted and visible. A greater
+accepted-row count is not evidence of better scientific quality.
 
-## Phase 1B implementation plan and acceptance criteria
+## Stable issue codes
 
-### 1. Schema and migration
+- `HEADER_MISMATCH`
+- `ROW_FIELD_COUNT_MISMATCH`
+- `MISSING_REQUIRED_VALUE`
+- `INVALID_IDENTIFIER`
+- `INVALID_ENCODING`
+- `INVALID_DATE`
+- `UNKNOWN_DRUG_ROLE`
+- `DUPLICATE_IDENTIFIER`
+- `DUPLICATE_RECORD`
+- `ORPHAN_REPORT`
+- `CASEID_MISMATCH`
+- `ORPHAN_DRUG_SEQUENCE`
 
-Implement reviewed SQLAlchemy models, staging/control/domain tables, constraints, indexes, and a
-new Alembic migration. A clean MySQL database upgrades and downgrades; relationship and uniqueness
-tests run against MySQL.
+Raw records and quarantine payloads are not logged. Reports contain aggregate counts, source
+member names, sizes, headers, checksum, and parser version only.
 
-### 2. Safe acquisition and manifest
+## Verified Phase 1B behavior
 
-Implement the explicit 2023 Q4 catalog entry and downloader. Unit tests use local byte streams and
-temporary ZIPs; an opt-in integration test may fetch only the approved FDA archive. The manifest
-contains URLs, posted/retrieval time, byte size, SHA-256, format, quarter, code/parser/schema
-versions, and immutable path. Re-running acquisition does not duplicate the artifact.
+The 2023 Q4 pass reconciled 5,912,989 scoped rows with zero structural rejections and zero invalid
+relationships. It preserved repeated identifiers and exact duplicate rows rather than removing
+them. Normal local passes completed in approximately 49-53 seconds; coverage instrumentation is
+intentionally slower.
 
-### 3. Streaming parser and validation
+Actual inspection corrected the provisional uniqueness design: FDA permits more than one DRUG row
+per `(PRIMARYID, DRUG_SEQ)` for dose, route, or frequency details. THER can likewise contain
+multiple therapy intervals, and INDI can contain multiple indications. These are collection
+grains, not records to deduplicate automatically.
 
-Implement archive/header protections, stream each required table, preserve source text/ordinal,
-and emit typed issues. Tests use minimal clearly synthetic fixtures and malformed structural
-cases, not invented scientific observations. Unknown optional columns are preserved and reported;
-missing required columns fail before load.
+## Deferred beyond Phase 1B
 
-### 4. Staging, reconciliation, and promotion
-
-Load in bounded batches, enforce parent and drug-sequence relationships, reconcile every source
-row, and promote atomically. Re-running the same artifact/parser/schema combination is a no-op;
-conflicting `PRIMARYID` content fails safely. A failed run cannot partially alter canonical data.
-
-### 5. Pilot execution and report
-
-Only after explicit approval, download and ingest 2023 Q4 ASCII. Publish actual file hashes, row
-counts, reject/warning counts, elapsed time, and environment in an ignored local run report (or a
-small non-data manifest if approved for Git). Do not infer signals or make causal/incidence claims.
-All Phase 0 and new checks must pass.
+- RPSR and the deleted-case list are inventoried but not parsed.
+- No SQLAlchemy domain models, Alembic migration, staging tables, or MySQL bulk load exist yet.
+- No product or MedDRA normalization is performed.
+- No statistical signal detection, ROR, PRR, AI, or retrieval work is present.

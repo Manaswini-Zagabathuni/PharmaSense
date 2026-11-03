@@ -1,0 +1,22 @@
+{
+  "archive_bytes": 72554591,
+  "archive_filename": "faers_ascii_2023Q4.zip",
+  "archive_sha256": "7e6b72848ed670900eaf78d24983c845f077091f71ffa7b9c310d590faebac62",
+  "format": "ASCII ZIP",
+  "fda_posted_date": "2024-01-23",
+  "landing_page_url": "https://www.fda.gov/drugs/fda-adverse-event-monitoring-system-aems/fda-adverse-event-monitoring-system-aems-latest-quarterly-data-files",
+  "manifest_recorded_at_utc": "2026-11-03T21:37:36Z",
+  "member_count": 18,
+  "quarter": 4,
+  "resolved_archive_url": "https://fis.fda.gov/content/Exports/faers_ascii_2023Q4.zip",
+  "scoped_rows": {
+    "DEMO": 415379,
+    "DRUG": 1920732,
+    "INDI": 1115961,
+    "OUTC": 327797,
+    "REAC": 1500033,
+    "THER": 633087
+  },
+  "source": "FDA FAERS Quarterly Data Extract",
+  "year": 2023
+}
