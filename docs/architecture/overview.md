@@ -4,7 +4,8 @@
 
 PharmaSense begins as a modular monolith with independently runnable ingestion, normalization,
 analysis, evaluation, API, and retrieval packages. Phase 0 implements only the web shell, API
-system endpoints, database infrastructure, migrations, and development tooling.
+system endpoints, database infrastructure, migrations, and development tooling. Phase 1A adds
+reviewed ingestion contracts and design documentation only; it does not download or load data.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -43,6 +44,9 @@ Historical evaluation ──► time-aware FDA action comparisons
 
 The future domain modules belong under `packages/pharmasense`; scripts and route handlers must
 not become alternate homes for business or statistical logic.
+
+The FAERS-specific schema and ingestion boundaries are described in
+[the proposed schema](faers-schema.md) and [ingestion architecture](faers-ingestion.md).
 
 ## Runtime topology
 

@@ -10,11 +10,14 @@ Adverse Event Monitoring System (AEMS) program and formerly called FAERS. Quarte
 raw, non-cumulative extracts containing report demographics, drugs, reactions, outcomes, and
 report-source information.
 
-- [FDA AEMS/FAERS quarterly data files](https://www.fda.gov/drugs/fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-latest-quarterly-data-files)
+- [FDA AEMS quarterly data extract files](https://fis.fda.gov/extensions/FPD-QDE-FAERS/FPD-QDE-FAERS.html)
 - [FDA quarterly file documentation](https://www.fda.gov/drugs/fda-adverse-event-monitoring-system-aems/faers-quarterly-data-files-documentation)
 
-The bulk archives, not the openFDA API, will be the reproducible analytical baseline. No archive
-is downloaded during Phase 0.
+The verified formats, proposed pilot quarter, format-era boundaries, and source limitations are
+documented in [FAERS/AEMS quarterly extracts](faers-quarterly-extracts.md). No archive was
+downloaded during Phase 1A.
+
+The bulk archives, not the openFDA API, will be the reproducible analytical baseline.
 
 ## Documented FDA safety activity
 

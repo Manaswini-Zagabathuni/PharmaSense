@@ -13,8 +13,13 @@ safety actions and labeling evidence.
 > A reporting association is not proof of causation, incidence, or comparative safety. Do not
 > use this project to diagnose, treat, prescribe, or change medication.
 
-Phase 0 provides the engineering foundation only. It does not ingest FDA data or calculate
-signals. See [the architecture](docs/architecture/overview.md), [official data sources](docs/data-sources/official-sources.md), and [scientific limitations](docs/scientific-methods/faers-limitations.md).
+Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design and testable format
+contracts for a future FDA quarterly-extract ingestion pipeline. It does not download or ingest
+FDA data and does not calculate signals. See [the architecture](docs/architecture/overview.md),
+[FAERS ingestion design](docs/architecture/faers-ingestion.md),
+[proposed schema](docs/architecture/faers-schema.md),
+[official data sources](docs/data-sources/official-sources.md), and
+[scientific limitations](docs/scientific-methods/faers-limitations.md).
 The latest environment-specific check record is in
 [Phase 0 verification](docs/phase-0-verification.md).
 
