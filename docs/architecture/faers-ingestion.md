@@ -1,8 +1,8 @@
 # FAERS ingestion architecture
 
 Phase 1B implements one bounded inspection command in the existing modular monolith, not a new
-service. The API does not perform bulk ingestion in request handlers. Database staging,
-migrations, and canonical persistence remain deferred.
+service. The API does not perform bulk ingestion in request handlers. Phase 1C adds the normalized
+SQLAlchemy schema and its migration; database staging, promotion, and bulk loading remain deferred.
 
 ## Implemented flow
 
@@ -88,9 +88,22 @@ per `(PRIMARYID, DRUG_SEQ)` for dose, route, or frequency details. THER can like
 multiple therapy intervals, and INDI can contain multiple indications. These are collection
 grains, not records to deduplicate automatically.
 
-## Deferred beyond Phase 1B
+## Phase 1C persistence boundary
+
+Alembic revision `20261103_0002` creates immutable source provenance, report/version, drug
+sequence/detail, report-child, drug-child, issue, and rejected-row tables. The design deliberately
+separates the relationship group `(PRIMARYID, DRUG_SEQ)` from individual DRUG rows because the
+verified source permits repeated sequence rows. All FDA rows retain member, line, and run
+provenance, with source quarter normalized through the immutable archive and directly available on
+report and sequence records.
+
+No Phase 1B parser output is written to these tables yet. A subsequent approved implementation
+must add a transactional staging/promotion service outside HTTP handlers and reconcile its counts
+against the existing quality report.
+
+## Deferred beyond Phase 1C
 
 - RPSR and the deleted-case list are inventoried but not parsed.
-- No SQLAlchemy domain models, Alembic migration, staging tables, or MySQL bulk load exist yet.
+- No staging tables, persistence orchestration, or MySQL bulk load exists yet.
 - No product or MedDRA normalization is performed.
 - No statistical signal detection, ROR, PRR, AI, or retrieval work is present.

@@ -6,6 +6,7 @@ from alembic import context
 from sqlalchemy import URL, engine_from_config, pool
 
 from pharmasense.config.settings import get_settings
+from pharmasense.db import models as _models  # noqa: F401 -- registers Alembic metadata.
 from pharmasense.db.base import Base
 
 config = context.config

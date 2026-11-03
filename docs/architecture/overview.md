@@ -7,7 +7,8 @@ analysis, evaluation, API, and retrieval packages. Phase 0 implements only the w
 system endpoints, database infrastructure, migrations, and development tooling. Phase 1A adds
 reviewed ingestion contracts and design documentation. Phase 1B adds local immutable acquisition,
 streaming parsing, and aggregate quality reporting for one approved quarter; it does not load
-records into MySQL.
+records into MySQL. Phase 1C implements the normalized relational model and migration while
+leaving bulk persistence deferred.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -48,7 +49,7 @@ The future domain modules belong under `packages/pharmasense`; scripts and route
 not become alternate homes for business or statistical logic.
 
 The FAERS-specific schema and ingestion boundaries are described in
-[the proposed schema](faers-schema.md) and [ingestion architecture](faers-ingestion.md).
+[the implemented schema](faers-schema.md) and [ingestion architecture](faers-ingestion.md).
 
 ## Runtime topology
 

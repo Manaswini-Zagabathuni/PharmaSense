@@ -1,87 +1,88 @@
-# Proposed FAERS relational schema
+# Implemented FAERS relational schema
 
-This is a design, not an applied migration. Phase 1B verified it against the selected archive but
-did not implement database persistence. Identifiers from FDA are stored as opaque
-strings even when they currently contain digits, preventing loss of leading zeros or future
-format assumptions. All timestamps are UTC.
+Phase 1C implements the normalized persistence foundation in SQLAlchemy and Alembic revision
+`20261103_0002`. It does not bulk-load the 2023 Q4 archive. FDA identifiers remain opaque ASCII
+strings even when observed values are numeric, and partial dates remain original strings rather
+than being completed or coerced.
+
+## Source semantics reconciled with 2023 Q4
+
+FDA's 2023 Q4 documentation defines `CASEID` as the case identifier and `PRIMARYID` as the
+individual safety report version identifier. The quarterly extract contains the latest version of
+each case available at extraction time; PharmaSense nevertheless models versions independently so
+that versions from different quarterly snapshots can coexist without overwrite.
+
+`DRUG_SEQ` is a relationship key within a report, not a unique DRUG-row identifier. FDA documents
+that, beginning with 2021 Q4 data, one `(PRIMARYID, DRUG_SEQ)` may have multiple DRUG rows when
+dose, route, or frequency details differ. Therefore, a sequence group is separate from its source
+DRUG rows. THER and INDI reference that group; REAC and OUTC reference the report version.
 
 ## Provenance and control tables
 
 | Table | Purpose and important constraints |
 | --- | --- |
-| `source_artifact` | One immutable ZIP: source system/era, quarter, format, FDA URL, posted date, retrieval time, byte size, SHA-256, local object key; unique SHA-256 and unique `(source, quarter, format, sha256)` |
-| `source_member` | One accepted ZIP member: artifact FK, logical table, original member path, member SHA-256, byte size, observed header JSON; unique `(artifact_id, member_path)` |
-| `ingestion_run` | Attempt identity, artifact FK, parser/schema versions, configuration JSON, status, start/end timestamps, code revision, counters; unique idempotency key derived from artifact hash plus parser/schema versions |
-| `ingestion_issue` | Run/member/line, severity, stable reason code, field name, safe value excerpt or hash, details JSON, occurrence count |
-| `rejected_record` | Quarantined row reference with member and line, raw-row hash, bounded encrypted-or-local-only payload, and rejection reasons; never written to application logs |
+| `source_artifact` | One immutable archive: FDA URL, local path, year/quarter, retrieval metadata, byte size, and unique SHA-256 |
+| `source_member` | One archive member: artifact FK, original path, CRC/SHA, sizes, header JSON, and observed row count; unique `(artifact_id, member_path)` |
+| `ingestion_run` | Append-only attempt with parser/schema/code versions, configuration, status, counters, timestamps, and unique idempotency key |
+| `ingestion_issue` | Stable issue code, severity, member/line context, safe excerpt or hash, structured details, and occurrence count |
+| `rejected_record` | Quarantined source row with member/line, hash, optional local payload, and issue codes; unique per run/member/line |
 
-Runs are append-only audit events. A failed run can be retried; promotion into canonical tables is
-transactional by member/batch, and a completed idempotency key is a no-op with a reported status.
+Every accepted or rejected row is traceable through `source_member` to its archive and source
+quarter and through `ingestion_run` to the software/configuration that processed it. Source quarter
+is stored directly on report versions and drug-sequence groups for the most common filtering
+paths; it is not duplicated onto every high-volume child row.
 
-## Domain tables
+## FAERS domain tables
 
-| Table | Key and selected columns |
+| Table | Grain and relationship |
 | --- | --- |
-| `faers_case` | PK `case_id`; first/last observed quarter and timestamps only—no destructive “current report” copy |
-| `faers_report_version` | PK `primary_id`; FK `case_id`; nullable parsed `case_version`; quarter/artifact/member/run FKs; source row number; FDA dates in raw text plus nullable parsed values; all other DEMO source fields; unique `(case_id, case_version)` only when version is present and verified unique |
-| `faers_drug_sequence` | Grouping key `(primary_id, drug_seq)` for relationships to THER and INDI; not a claim that only one DRUG source row exists |
-| `faers_drug` | Surrogate PK; FK to `faers_drug_sequence`; original `role_code`, `drug_name`, active ingredient, route, dose, and other DRUG values; source row number; unique only by source member and row number |
-| `faers_reaction` | Surrogate PK; FK `primary_id`; original `preferred_term`; optional source fields; source row number; unique `(source_member_id, source_row_number)` |
-| `faers_outcome` | Surrogate PK; FK `primary_id`; original outcome code; source row number; unique `(source_member_id, source_row_number)` |
-| `faers_therapy` | Surrogate PK; FK (`primary_id`, `drug_seq`) to DRUG; original start/end/duration text plus nullable parsed values; source row number |
-| `faers_indication` | Surrogate PK; FK (`primary_id`, `drug_seq`) to DRUG; original indication term; source row number |
+| `faers_case` | One longitudinal `CASEID`; created-by-run provenance only, with no mutable “current report” pointer |
+| `faers_report_version` | One immutable DEMO row keyed by `PRIMARYID`; FK to `CASEID`; unique case/version and source member/row |
+| `faers_drug_sequence` | One `(PRIMARYID, DRUG_SEQ)` relationship group |
+| `faers_drug` | One DRUG source row with a surrogate key and FK to its sequence group; repeated sequence rows are allowed |
+| `faers_reaction` | One report-level REAC source row |
+| `faers_outcome` | One report-level OUTC source row |
+| `faers_therapy` | One THER source row linked to a report/drug sequence |
+| `faers_indication` | One INDI source row linked to a report/drug sequence |
 
-Every domain row retains `source_member_id`, `source_row_number`, `ingested_at`, and the run that
-created it. A compact JSON `source_extras` column may preserve unmodeled columns, but it is not a
-substitute for typed fields used in filtering or integrity checks. Raw source files remain the
-immutable system of record.
+All verified 2023 Q4 DEMO and DRUG columns are represented. REAC, OUTC, THER, and INDI retain
+their verified source columns, including their original child-row `CASEID` as `source_case_id` for
+disagreement auditing. `source_extras` provides a lossless extension point for later
+compatible columns but does not replace modeled fields. Original drug names, active ingredients,
+role codes, reaction terms, indication terms, dose strings, and partial dates are preserved.
 
-Foreign keys use `RESTRICT` for source provenance and report parents. Canonical source rows are
-not cascade-deleted. Indexes cover `case_id`, `(case_id, case_version)`, report foreign keys,
-`(primary_id, drug_seq)`, `(primary_id, role_code)`, and exact original drug/reaction text where
-MySQL index length permits.
+## Integrity and query design
 
-Phase 1B invalidated the earlier provisional uniqueness proposal for `(primary_id, drug_seq)`.
-FDA documents one or more DRUG rows per sequence for direct reports with multiple dose, route, or
-frequency details; 2023 Q4 contains 185 repeated sequence identifiers. Persistence must retain
-every source row and link THER/INDI through the grouping table. No migration is part of Phase 1B.
+- `PRIMARYID` is the report-version primary key; `(CASEID, CASEVERSION)` is also unique.
+- Every source table prevents accidental replay of the same member/row.
+- The unique run idempotency key prevents the same artifact/parser/schema operation from being
+  promoted twice.
+- Composite foreign keys require DRUG, THER, and INDI rows to reference a real drug-sequence
+  group. REAC and OUTC require a real report version.
+- All provenance and domain foreign keys use `ON DELETE RESTRICT`. ORM relationships use passive
+  deletes; original FDA rows are not cascade-deleted.
+- Indexes cover source periods, run status, case/version lookup, FDA receipt date, report/role,
+  report/outcome, report/drug sequence, and original drug/reaction/indication text. MySQL text
+  indexes use a 191-character prefix.
+- No view joins all child collections. Each child must be aggregated at its own grain before
+  combination, preventing accidental reaction × drug × outcome × therapy multiplication.
 
-## Version and duplicate policy
+Possible duplicate submissions from different reporters are not merged. A repeated `PRIMARYID`
+with conflicting content must become a high-severity ingestion conflict; it must never overwrite
+stored history.
 
-`CASEID` identifies the longitudinal case and `PRIMARYID` identifies one submitted report version.
-All versions are retained. A `latest_report_version` database view (or equivalent query) ranks
-verified versions within each case by case version, FDA receipt date, and deterministic ID
-tie-breaker. It is explicitly a convenience view; historical analyses must apply their own
-as-of cutoff and never use a future follow-up.
+## Migration and rollback
 
-Three different situations are not conflated:
+Apply the schema with `alembic upgrade head`. Revision `20261103_0002` creates only new tables and
+indexes after the Phase 0 baseline; it does not alter or delete existing application data.
 
-1. **Exact file/run replay:** prevented by artifact hash and run idempotency key.
-2. **The same FDA report version:** prevented by `primary_id` and validated for content conflicts.
-3. **Possible duplicate submissions from different reporters:** not automatically merged. FDA
-   acknowledges these exist, but similarity-based linkage can create false matches. A later,
-   separately versioned candidate-link table may support review without changing source rows.
+The downgrade drops all Phase 1C tables in reverse foreign-key order. That is intentionally
+destructive and is suitable only before data is loaded or after an independently verified backup.
+Production rollback should normally deploy forward fixes instead of downgrading. MySQL DDL is not
+transactional as a unit, so interrupted migrations require inspection before retry.
 
-If a repeated `primary_id` differs in content, ingestion fails promotion and records a
-high-severity provenance conflict rather than overwriting either value.
+## Deferred
 
-## Preventing join multiplication
-
-REAC and OUTC are report-level collections; THER and INDI are drug-level collections. Queries must
-aggregate each collection at its own grain before combining them. No convenience view joins all
-children into one flat rowset. A future drug–reaction analysis table will deliberately form one
-pair per eligible `(primary_id, drug_id, reaction_id)` under a documented role/version policy and
-will not join outcomes, therapies, or indications into that pairing operation.
-
-## Missing, malformed, and unknown values
-
-- Preserve the decoded source token and distinguish empty, absent column, invalid, and parsed
-  values. Never turn an invalid value into zero or an invented date.
-- Parse partial FDA dates into a precision-aware representation (`year`, optional month/day,
-  precision code) rather than filling missing components.
-- Unknown role/outcome/unit codes remain in the row and generate a warning; structural key errors,
-  malformed row width, orphan parent IDs, or unsafe archive paths reject the row or artifact.
-- Child `CASEID` disagreement, duplicate sequence keys, decode replacement characters, and
-  unexpected headers are measured and surfaced. Required-header drift blocks ingestion.
-- Quality thresholds are configuration recorded on the run. Reports include totals, accepted,
-  rejected, warned, orphaned, and reason-code counts per member; no silent drops are allowed.
+Bulk persistence, staging/promotion services, latest-version convenience queries, parsed
+precision-aware date fields, product/terminology normalization, and statistical signal analysis
+remain outside Phase 1C.

@@ -13,12 +13,13 @@ safety actions and labeling evidence.
 > A reporting association is not proof of causation, incidence, or comparative safety. Do not
 > use this project to diagnose, treat, prescribe, or change medication.
 
-Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design and Phase 1B adds a
-streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII archive. It does
-not load data into MySQL and does not calculate signals. See
+Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design, Phase 1B adds a
+streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII archive, and
+Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. It does not load FDA rows
+into MySQL and does not calculate signals. See
 [the architecture](docs/architecture/overview.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
-[proposed schema](docs/architecture/faers-schema.md),
+[implemented schema](docs/architecture/faers-schema.md),
 [official data sources](docs/data-sources/official-sources.md), and
 [scientific limitations](docs/scientific-methods/faers-limitations.md).
 The latest environment-specific check record is in
@@ -84,6 +85,17 @@ pnpm --dir apps/web dev
 
 The liveness endpoint confirms the process can serve requests. The readiness endpoint performs
 `SELECT 1` against MySQL and returns HTTP 503 if configuration or connectivity is unavailable.
+
+The API container runs `alembic upgrade head` before startup. For local MySQL, apply the same
+migration explicitly and inspect the active revision:
+
+```bash
+alembic upgrade head
+alembic current
+```
+
+Revision `20261103_0002` creates the Phase 1C FAERS persistence tables. Its downgrade removes those
+tables and is destructive once data exists; use a verified backup and prefer a forward migration.
 
 ## Quality checks
 
