@@ -1,0 +1,75 @@
+# Architecture overview
+
+## Scope
+
+PharmaSense begins as a modular monolith with independently runnable ingestion, normalization,
+analysis, evaluation, API, and retrieval packages. Phase 0 implements only the web shell, API
+system endpoints, database infrastructure, migrations, and development tooling.
+
+This boundary keeps scientific logic independent of transport concerns and avoids premature
+distributed-system complexity.
+
+## Target flow
+
+```text
+Official FDA/NLM sources
+        │
+        ▼
+Ingestion ──► immutable raw artifacts and manifests
+        │
+        ▼
+Normalization ──► versioned relational records
+        │
+        ▼
+Signal analysis ──► dated, reproducible signal snapshots
+        │
+        ▼
+Historical evaluation ──► time-aware FDA action comparisons
+        │
+        ├──► FastAPI ──► React research interface
+        │
+        └──► evidence retrieval ──► source-cited label answers
+```
+
+## Module boundaries
+
+- `ingestion`: source-specific downloading and parsing; produces provenance and raw records.
+- `normalization`: retains source values while generating reviewed normalized concepts.
+- `signals`: pure statistical calculations and versioned analytical outputs.
+- `evaluation`: temporal matching between computed signals and documented actions.
+- `retrieval`: label parsing, indexing, retrieval, and citation construction.
+- `api`: validation and transport only; it calls application services.
+- `db`: SQLAlchemy infrastructure and relational models.
+
+The future domain modules belong under `packages/pharmasense`; scripts and route handlers must
+not become alternate homes for business or statistical logic.
+
+## Runtime topology
+
+Phase 0 runs three services:
+
+- MySQL 8.4 stores structured, versioned records.
+- FastAPI exposes liveness/readiness and, in later phases, research resources.
+- Vite serves the React development interface.
+
+The API can be live while not ready. `/api/v1/health` tests process liveness;
+`/api/v1/ready` executes `SELECT 1` through SQLAlchemy and returns 503 on missing configuration
+or failed connectivity.
+
+MySQL is isolated on an internal Compose network and is not published to the host. Only the API
+and frontend development ports bind to `127.0.0.1`.
+
+## Configuration and provenance
+
+Runtime configuration comes from environment variables. Secret values have no application
+defaults and `.env` is ignored. Source artifacts added in Phase 1 will be immutable, checksummed,
+and associated with parser and schema versions. Derived data and vector indexes must be
+rebuildable from those artifacts.
+
+## Deferred decisions
+
+- No job queue or workflow orchestrator until measured pipeline needs justify one.
+- No vector store until the label retrieval phase.
+- No cloud object store until local volumes become insufficient.
+- Authentication is deferred while the stack is local-only; a public deployment must add an
+  external identity provider, authorization policy, request limits, and deployment threat model.

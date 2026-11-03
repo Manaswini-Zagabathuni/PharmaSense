@@ -1,0 +1,129 @@
+:root {
+  color: #17342f;
+  background: #f3f6f3;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+main {
+  width: min(70rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(3rem, 10vw, 8rem) 0 4rem;
+}
+
+.hero {
+  max-width: 50rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: #176b5b;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.7rem;
+  color: #0d2c27;
+  font-size: clamp(3.2rem, 11vw, 7.5rem);
+  letter-spacing: -0.065em;
+  line-height: 0.92;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.tagline {
+  margin-bottom: 1.5rem;
+  color: #176b5b;
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-weight: 650;
+}
+
+.summary {
+  color: #45645e;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 4rem;
+  padding: 1.5rem;
+  border: 1px solid #c8d7d2;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1rem 2.5rem rgb(25 67 57 / 8%);
+}
+
+.status {
+  margin: 0;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.status--checking {
+  color: #5d4a18;
+  background: #fff2c5;
+}
+
+.status--available {
+  color: #07543f;
+  background: #d8f5e9;
+}
+
+.status--unavailable {
+  color: #7b251c;
+  background: #fde2de;
+}
+
+.notice {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-left: 0.3rem solid #d5a62e;
+  color: #4c4b3f;
+  background: #fff9e8;
+  line-height: 1.55;
+}
+
+@media (max-width: 38rem) {
+  .status-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}

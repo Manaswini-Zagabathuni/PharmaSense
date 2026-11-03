@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools==75.8.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pharmasense"
+version = "0.1.0"
+description = "Research-oriented drug safety intelligence using public FDA data"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "PharmaSense contributors" }]
+dependencies = [
+  "alembic==1.14.1",
+  "fastapi==0.162.0",
+  "pydantic-settings==2.7.1",
+  "PyMySQL==1.1.1",
+  "SQLAlchemy==2.0.38",
+  "uvicorn[standard]==0.34.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx2==2.16.0",
+  "mypy==1.15.0",
+  "pytest==9.2.0",
+  "pytest-cov==6.0.0",
+  "ruff==0.9.7",
+]
+
+[project.scripts]
+pharmasense-api = "pharmasense.api.main:run"
+
+[tool.setuptools.packages.find]
+where = ["packages"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers -ra"
+pythonpath = ["packages"]
+testpaths = ["tests"]
+markers = ["integration: requires an external service"]
+
+[tool.coverage.run]
+branch = true
+source = ["pharmasense"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["packages", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["packages", "tests"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = "pymysql.*"
+ignore_missing_imports = true
