@@ -2,7 +2,7 @@
 
 Phase 1B implements one bounded inspection command in the existing modular monolith, not a new
 service. The API does not perform bulk ingestion in request handlers. Phase 1C adds the normalized
-SQLAlchemy schema and its migration; database staging, promotion, and bulk loading remain deferred.
+SQLAlchemy schema and migration; Phase 1D adds the restartable persistence service described below.
 
 ## Implemented flow
 
@@ -97,13 +97,38 @@ verified source permits repeated sequence rows. All FDA rows retain member, line
 provenance, with source quarter normalized through the immutable archive and directly available on
 report and sequence records.
 
-No Phase 1B parser output is written to these tables yet. A subsequent approved implementation
-must add a transactional staging/promotion service outside HTTP handlers and reconcile its counts
-against the existing quality report.
+Phase 1C itself wrote no parser output. Phase 1D now uses these tables directly in bounded,
+checkpointed transactions and reconciles persisted records against the committed source manifest.
 
-## Deferred beyond Phase 1C
+## Phase 1D restartable persistence
+
+`persistence.py` implements the approved database boundary without moving work into an HTTP
+handler. It validates the explicit archive and committed manifest before mutation, registers the
+artifact and six archive members, and uses a deterministic key derived from archive checksum,
+parser version, schema version, and source quarter.
+
+Tables load in dependency order: DEMO, DRUG, REAC, OUTC, THER, then INDI. Every batch transaction
+contains its source rows, quarantine/issues, counters, and last committed source-row checkpoint.
+An interrupted transaction therefore advances neither data nor checkpoint. A resumed run streams
+past committed row numbers and continues; a completed rerun returns a no-op reconciliation.
+
+`ingestion_run.configuration` stores per-table checkpoints and counters. This avoids a new control
+table while only one quarter is supported. The implementation assumes one ingestion writer per
+archive; a future multi-worker loader needs database-backed work claiming rather than concurrent
+mutation of the JSON checkpoint.
+
+Structurally invalid and missing-parent rows are retained in `rejected_record` with stable issue
+codes and an `ingestion_issue`. Exact duplicate child source rows remain distinct because source
+member and row number—not content—define their provenance. Multiple DRUG rows continue to share a
+single drug-sequence grouping.
+
+Reconciliation records source/accepted/rejected/inserted/skipped counts, artifact-scoped and total
+database counts, missing parents, integrity queries, batches, checksum, duration, and status. It
+does not interpret reporting counts as incidence, prevalence, or causality.
+
+## Deferred beyond Phase 1D
 
 - RPSR and the deleted-case list are inventoried but not parsed.
-- No staging tables, persistence orchestration, or MySQL bulk load exists yet.
+- No parallel or multi-host ingestion coordination exists yet.
 - No product or MedDRA normalization is performed.
 - No statistical signal detection, ROR, PRR, AI, or retrieval work is present.

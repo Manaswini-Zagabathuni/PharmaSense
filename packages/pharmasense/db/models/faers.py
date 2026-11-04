@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pharmasense.db.base import Base
-from pharmasense.db.models.common import CreatedAtMixin, source_identifier
+from pharmasense.db.models.common import CreatedAtMixin, bigint_primary_key, source_identifier
 
 if TYPE_CHECKING:
     from pharmasense.db.models.provenance import IngestionRun, SourceMember
@@ -165,7 +165,7 @@ class FaersDrug(SourceRowMixin, Base):
         Index("ix_faers_drug_name", "drugname", mysql_length=191),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     primary_id: Mapped[str] = mapped_column(source_identifier(1000), nullable=False)
     source_case_id: Mapped[str] = mapped_column(source_identifier(500), nullable=False)
     drug_seq: Mapped[str] = mapped_column(source_identifier(10), nullable=False)
@@ -202,7 +202,7 @@ class FaersReaction(SourceRowMixin, Base):
         Index("ix_faers_reaction_term", "pt", mysql_length=191),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     primary_id: Mapped[str] = mapped_column(
         source_identifier(1000),
         ForeignKey("faers_report_version.primary_id", ondelete="RESTRICT"),
@@ -226,7 +226,7 @@ class FaersOutcome(SourceRowMixin, Base):
         Index("ix_faers_outcome_report_code", "primary_id", "outc_cod"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     primary_id: Mapped[str] = mapped_column(
         source_identifier(1000),
         ForeignKey("faers_report_version.primary_id", ondelete="RESTRICT"),
@@ -254,7 +254,7 @@ class FaersTherapy(SourceRowMixin, Base):
         Index("ix_faers_therapy_drug_sequence", "primary_id", "drug_seq"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     primary_id: Mapped[str] = mapped_column(source_identifier(1000), nullable=False)
     source_case_id: Mapped[str] = mapped_column(source_identifier(500), nullable=False)
     drug_seq: Mapped[str] = mapped_column(source_identifier(10), nullable=False)
@@ -283,7 +283,7 @@ class FaersIndication(SourceRowMixin, Base):
         Index("ix_faers_indication_term", "indi_pt", mysql_length=191),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     primary_id: Mapped[str] = mapped_column(source_identifier(1000), nullable=False)
     source_case_id: Mapped[str] = mapped_column(source_identifier(500), nullable=False)
     drug_seq: Mapped[str] = mapped_column(source_identifier(10), nullable=False)

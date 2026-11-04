@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import zipfile
 from pathlib import Path
 
@@ -60,3 +62,22 @@ def write_synthetic_archive(
                 else:
                     content.extend(("$".join(row) + "\n").encode("ascii"))
             archive.writestr(f"ASCII/{table.value}23Q4.txt", bytes(content))
+
+
+def write_synthetic_manifest(path: Path, archive: Path, row_counts: dict[FaersTable, int]) -> None:
+    """Write a test-only manifest matching a synthetic structural archive."""
+
+    checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+    manifest = {
+        "archive_bytes": archive.stat().st_size,
+        "archive_filename": archive.name,
+        "archive_sha256": checksum,
+        "fda_posted_date": "2024-01-23",
+        "landing_page_url": "https://example.invalid/test-only",
+        "quarter": 4,
+        "resolved_archive_url": "https://example.invalid/synthetic.zip",
+        "scoped_rows": {table.value: row_counts.get(table, 0) for table in FaersTable},
+        "source": "Synthetic FAERS structural test fixture",
+        "year": 2023,
+    }
+    path.write_text(json.dumps(manifest), encoding="utf-8")

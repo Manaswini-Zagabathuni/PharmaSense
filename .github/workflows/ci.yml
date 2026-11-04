@@ -47,7 +47,9 @@ jobs:
       - name: Type check
         run: python -m mypy
       - name: Apply migrations
-        run: python -m alembic upgrade head
+        run: |
+          python -m alembic upgrade head
+          python -m alembic check
       - name: Test
         run: python -m pytest --cov --cov-report=term-missing --cov-report=xml
 

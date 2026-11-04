@@ -8,7 +8,8 @@ system endpoints, database infrastructure, migrations, and development tooling. 
 reviewed ingestion contracts and design documentation. Phase 1B adds local immutable acquisition,
 streaming parsing, and aggregate quality reporting for one approved quarter; it does not load
 records into MySQL. Phase 1C implements the normalized relational model and migration while
-leaving bulk persistence deferred.
+leaving bulk persistence deferred. Phase 1D adds checksum-gated, restartable, batch-oriented
+database ingestion and reconciliation without adding a worker service.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.

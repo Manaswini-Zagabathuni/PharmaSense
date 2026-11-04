@@ -21,7 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pharmasense.db.base import Base
-from pharmasense.db.models.common import CreatedAtMixin
+from pharmasense.db.models.common import CreatedAtMixin, bigint_primary_key
 
 if TYPE_CHECKING:
     from pharmasense.db.models.faers import FaersCase, FaersReportVersion
@@ -39,7 +39,7 @@ class SourceArtifact(CreatedAtMixin, Base):
         Index("ix_source_artifact_period", "source_system", "source_year", "source_quarter"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     source_name: Mapped[str] = mapped_column(String(128), nullable=False)
     source_system: Mapped[str] = mapped_column(String(32), nullable=False)
     source_year: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -74,7 +74,7 @@ class SourceMember(CreatedAtMixin, Base):
         Index("ix_source_member_artifact_logical_table", "artifact_id", "logical_table"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     artifact_id: Mapped[int] = mapped_column(
         ForeignKey("source_artifact.id", ondelete="RESTRICT"), nullable=False
     )
@@ -102,7 +102,7 @@ class IngestionRun(CreatedAtMixin, Base):
         Index("ix_ingestion_run_artifact_status", "artifact_id", "status"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     artifact_id: Mapped[int] = mapped_column(
         ForeignKey("source_artifact.id", ondelete="RESTRICT"), nullable=False
     )

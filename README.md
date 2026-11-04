@@ -15,15 +15,15 @@ safety actions and labeling evidence.
 
 Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design, Phase 1B adds a
 streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII archive, and
-Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. It does not load FDA rows
-into MySQL and does not calculate signals. See
+Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. Phase 1D adds restartable,
+checksum-gated database ingestion and reconciliation. It does not calculate signals. See
 [the architecture](docs/architecture/overview.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
 [implemented schema](docs/architecture/faers-schema.md),
 [official data sources](docs/data-sources/official-sources.md), and
 [scientific limitations](docs/scientific-methods/faers-limitations.md).
 The latest environment-specific check record is in
-[Phase 0 verification](docs/phase-0-verification.md).
+[Phase 1D verification](docs/phase-1d-verification.md).
 
 ## Implemented services
 
@@ -137,6 +137,37 @@ python -m pharmasense.ingestion.faers.cli \
 Both outputs are aggregate local artifacts and remain ignored. Identical reruns leave existing
 report files unchanged. See [Phase 1B verification](docs/phase-1b-verification.md) for observed
 archive facts and limitations.
+
+## FAERS 2023 Q4 database ingestion
+
+Apply migrations and validate the archive before loading:
+
+```bash
+alembic upgrade head
+python -m pharmasense.ingestion.faers.ingest_cli \
+  data/raw/faers/2023Q4/faers_ascii_2023Q4.zip \
+  --manifest docs/data-sources/manifests/faers-2023q4-ascii.json \
+  --year 2023 --quarter 4 \
+  --json-report data/processed/faers/2023Q4/validation.json \
+  --markdown-report data/processed/faers/2023Q4/validation.md \
+  --validate-only
+```
+
+Run or resume the database load with:
+
+```bash
+make ingest-faers
+# Optional smaller transactions:
+make ingest-faers FAERS_BATCH_SIZE=1000
+```
+
+The equivalent `pharmasense-faers-ingest` command accepts `--batch-size`. `--max-batches N`
+intentionally pauses after `N` committed batches for operationally bounded runs; invoking the same
+command again resumes from the last committed source row. A completed rerun is a reported no-op.
+Reconciliation is written under ignored `data/processed` storage as JSON and Markdown.
+
+Ingestion requires a database at Alembic revision `20261103_0002`. It validates the committed
+manifest checksum before database mutation and never chooses a “latest” quarter implicitly.
 
 ## License
 

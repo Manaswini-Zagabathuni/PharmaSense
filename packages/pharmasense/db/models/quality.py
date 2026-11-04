@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pharmasense.db.base import Base
-from pharmasense.db.models.common import CreatedAtMixin
+from pharmasense.db.models.common import CreatedAtMixin, bigint_primary_key
 
 if TYPE_CHECKING:
     from pharmasense.db.models.provenance import IngestionRun, SourceMember
@@ -33,7 +33,7 @@ class IngestionIssue(CreatedAtMixin, Base):
         Index("ix_ingestion_issue_member_row", "source_member_id", "source_row_number"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     ingestion_run_id: Mapped[int] = mapped_column(
         ForeignKey("ingestion_run.id", ondelete="RESTRICT"), nullable=False
     )
@@ -63,7 +63,7 @@ class RejectedRecord(CreatedAtMixin, Base):
         Index("ix_rejected_record_run_table", "ingestion_run_id", "logical_table"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(bigint_primary_key(), primary_key=True, autoincrement=True)
     ingestion_run_id: Mapped[int] = mapped_column(
         ForeignKey("ingestion_run.id", ondelete="RESTRICT"), nullable=False
     )

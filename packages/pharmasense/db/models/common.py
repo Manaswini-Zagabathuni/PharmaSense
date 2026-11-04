@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import BigInteger, DateTime, Integer, func
 from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,6 +13,12 @@ def source_identifier(length: int) -> mysql.VARCHAR:
     """Return an ASCII identifier type sized to FDA's documented source limits."""
 
     return mysql.VARCHAR(length=length, charset="ascii")  # type: ignore[no-untyped-call]
+
+
+def bigint_primary_key() -> BigInteger:
+    """Use BIGINT in MySQL and an autoincrement-compatible INTEGER in SQLite tests."""
+
+    return BigInteger().with_variant(Integer(), "sqlite")
 
 
 class CreatedAtMixin:
