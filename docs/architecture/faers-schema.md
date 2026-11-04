@@ -81,8 +81,14 @@ destructive and is suitable only before data is loaded or after an independently
 Production rollback should normally deploy forward fixes instead of downgrading. MySQL DDL is not
 transactional as a unit, so interrupted migrations require inspection before retry.
 
+## Latest-version analytics
+
+Phase 2A deliberately leaves this immutable schema unchanged. The analytics layer resolves one
+latest report per case by the unique maximum numeric `CASEVERSION` and exposes invalid-only or tied
+cases as explicit diagnostics. It does not maintain a mutable current-version foreign key or
+delete superseded reports. See [FAERS latest-version resolution](faers-latest-version.md).
+
 ## Deferred
 
-Bulk persistence, staging/promotion services, latest-version convenience queries, parsed
-precision-aware date fields, product/terminology normalization, and statistical signal analysis
-remain outside Phase 1C.
+Parsed precision-aware date fields, product/terminology normalization, statistical signal
+analysis, and historical as-of version resolution remain outside Phase 2A.

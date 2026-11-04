@@ -10,6 +10,7 @@ streaming parsing, and aggregate quality reporting for one approved quarter; it 
 records into MySQL. Phase 1C implements the normalized relational model and migration while
 leaving bulk persistence deferred. Phase 1D adds checksum-gated, restartable, batch-oriented
 database ingestion and reconciliation without adding a worker service.
+Phase 2A adds reusable, read-only latest-report-version resolution in the analytics layer.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -40,6 +41,8 @@ Historical evaluation ──► time-aware FDA action comparisons
 
 - `ingestion`: source-specific downloading and parsing; produces provenance and raw records.
 - `normalization`: retains source values while generating reviewed normalized concepts.
+- `analytics`: reusable relational selections that define analysis populations without mutating
+  source records.
 - `signals`: pure statistical calculations and versioned analytical outputs.
 - `evaluation`: temporal matching between computed signals and documented actions.
 - `retrieval`: label parsing, indexing, retrieval, and citation construction.
@@ -51,6 +54,8 @@ not become alternate homes for business or statistical logic.
 
 The FAERS-specific schema and ingestion boundaries are described in
 [the implemented schema](faers-schema.md) and [ingestion architecture](faers-ingestion.md).
+Latest-version selection is specified in
+[the FAERS latest-version resolution design](faers-latest-version.md).
 
 ## Runtime topology
 
