@@ -11,6 +11,8 @@ records into MySQL. Phase 1C implements the normalized relational model and migr
 leaving bulk persistence deferred. Phase 1D adds checksum-gated, restartable, batch-oriented
 database ingestion and reconciliation without adding a worker service.
 Phase 2A adds reusable, read-only latest-report-version resolution in the analytics layer.
+Phase 2B builds source-name drug and report-level drug-reaction co-reporting summaries on that
+resolved population without persisting derived data.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -56,6 +58,8 @@ The FAERS-specific schema and ingestion boundaries are described in
 [the implemented schema](faers-schema.md) and [ingestion architecture](faers-ingestion.md).
 Latest-version selection is specified in
 [the FAERS latest-version resolution design](faers-latest-version.md).
+Drug and drug-reaction counting rules are specified in
+[the FAERS drug-reaction analytics design](faers-drug-reaction-analytics.md).
 
 ## Runtime topology
 

@@ -91,4 +91,4 @@ delete superseded reports. See [FAERS latest-version resolution](faers-latest-ve
 ## Deferred
 
 Parsed precision-aware date fields, product/terminology normalization, statistical signal
-analysis, and historical as-of version resolution remain outside Phase 2A.
+analysis, and historical as-of version resolution remain outside Phase 2B.
