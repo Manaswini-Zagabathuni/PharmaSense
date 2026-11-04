@@ -11,6 +11,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings=0",
+    "test:live": "vitest run src/e2e/live-stack.test.tsx --coverage.enabled=false",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --coverage"
   },

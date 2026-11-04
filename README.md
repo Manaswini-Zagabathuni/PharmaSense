@@ -19,8 +19,10 @@ Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. Phase 1D a
 checksum-gated database ingestion and reconciliation. Phase 2 adds read-only latest-version,
 drug-reaction, disproportionality, confidence, and prioritization analytics. Phase 3A exposes
 those analytics through a bounded, read-only API, and Phase 3B provides a responsive React
-research dashboard over that API. See
+research dashboard over that API. Phase 4A adds an opt-in synthetic demonstration population and
+a guarded live frontend-to-MySQL verification workflow. See
 [the architecture](docs/architecture/overview.md),
+[the local full-stack runbook](docs/architecture/local-full-stack.md),
 [analytics API](docs/architecture/analytics-api.md),
 [frontend dashboard](docs/architecture/frontend-dashboard.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
@@ -57,7 +59,8 @@ There is intentionally no Redis, Kafka, workflow orchestrator, retrieval service
 
    ```bash
    docker compose config
-   docker compose up --build
+   docker compose up --build --detach
+   docker compose ps
    ```
 
 3. Open the frontend at <http://localhost:5173>. The API is at
@@ -66,6 +69,24 @@ There is intentionally no Redis, Kafka, workflow orchestrator, retrieval service
 
 The API container applies Alembic migrations before starting. MySQL is not exposed outside the
 Compose network by default.
+
+4. Load the explicitly synthetic, idempotent demonstration population and verify the complete
+   frontend-client -> API -> analytics-service -> MySQL path:
+
+   ```bash
+   make compose-seed-demo
+   make verify-live
+   ```
+
+   The seed contains 20 deterministic `DEMO`-named reports and is not FDA data or evidence. See
+   the [local full-stack runbook](docs/architecture/local-full-stack.md) for its provenance,
+   safety boundary, live-test behavior, and manual dashboard checks.
+
+5. Stop the services while preserving the database volume:
+
+   ```bash
+   docker compose down
+   ```
 
 ## Local development
 
@@ -104,6 +125,19 @@ The dashboard opens on Signal Explorer and provides a Drug Explorer workspace. V
 `VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to
 `VITE_API_PROXY_TARGET=http://localhost:8000` during local development. Do not place secrets in
 `VITE_*` variables because Vite bundles them into browser code.
+
+For a standalone local MySQL installation, apply migrations, seed the optional demonstration
+population, and start both processes:
+
+```bash
+alembic upgrade head
+make seed-demo
+uvicorn pharmasense.api.main:app --reload
+pnpm --dir apps/web dev
+```
+
+Then `make verify-live` exercises the real API. The normal `make check` suite does not require a
+running database or backend; the guarded live dashboard test runs only through `verify-live`.
 
 The API container runs `alembic upgrade head` before startup. For local MySQL, apply the same
 migration explicitly and inspect the active revision:

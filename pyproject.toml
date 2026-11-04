@@ -31,6 +31,7 @@ dev = [
 
 [project.scripts]
 pharmasense-api = "pharmasense.api.main:run"
+pharmasense-demo-seed = "pharmasense.demo.seed:main"
 pharmasense-faers-inspect = "pharmasense.ingestion.faers.cli:main"
 pharmasense-faers-ingest = "pharmasense.ingestion.faers.ingest_cli:main"
 

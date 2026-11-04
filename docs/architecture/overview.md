@@ -21,6 +21,8 @@ Phase 3A exposes these analytics through bounded, read-only FastAPI routes backe
 application service; route handlers do not contain statistical or query logic.
 Phase 3B adds a responsive React dashboard that consumes those routes through a typed client and
 does not reproduce analytics calculations in browser code.
+Phase 4A documents and verifies the local Vite -> FastAPI -> MySQL runtime path and adds a
+transactional, idempotent, explicitly synthetic demonstration seed outside production ingestion.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -76,6 +78,8 @@ The public HTTP contracts and error behavior are described in
 [the read-only analytics API design](analytics-api.md).
 The browser client, workspaces, configuration, and accessibility boundaries are described in
 [the read-only analytics dashboard design](frontend-dashboard.md).
+The Compose topology, synthetic demonstration boundary, and guarded live verification are
+described in [the local full-stack runbook](local-full-stack.md).
 
 ## Runtime topology
 

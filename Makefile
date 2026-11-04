@@ -1,7 +1,9 @@
 SHELL := /bin/sh
 FAERS_BATCH_SIZE ?= 5000
 
-.PHONY: help install install-frontend lint format-check typecheck test migrate ingest-faers api web compose-config up down check
+LIVE_API_BASE_URL ?= http://127.0.0.1:8000/api/v1
+
+.PHONY: help install install-frontend lint format-check typecheck test migrate ingest-faers seed-demo compose-seed-demo verify-live api web compose-config up down check
 
 help:
 	@echo "PharmaSense development commands"
@@ -10,6 +12,9 @@ help:
 	@echo "  make check             Run backend and frontend checks"
 	@echo "  make migrate           Apply database migrations"
 	@echo "  make ingest-faers      Resume the verified FDA 2023 Q4 database load"
+	@echo "  make seed-demo         Seed the configured database with synthetic demo data"
+	@echo "  make compose-seed-demo Seed the Compose database with synthetic demo data"
+	@echo "  make verify-live       Exercise the dashboard against the live API and database"
 	@echo "  make up                Start the Docker Compose stack"
 
 install:
@@ -44,6 +49,16 @@ ingest-faers:
 		--year 2023 --quarter 4 --batch-size $(FAERS_BATCH_SIZE) \
 		--json-report data/processed/faers/2023Q4/ingestion-reconciliation.json \
 		--markdown-report data/processed/faers/2023Q4/ingestion-reconciliation.md
+
+seed-demo:
+	python -m pharmasense.demo.seed --confirm-synthetic
+
+compose-seed-demo:
+	docker compose run --rm api python -m pharmasense.demo.seed --confirm-synthetic
+
+verify-live:
+	VITE_LIVE_E2E=1 VITE_API_BASE_URL=$(LIVE_API_BASE_URL) \
+		pnpm --dir apps/web test:live
 
 api:
 	python -m uvicorn pharmasense.api.main:app --reload --host 0.0.0.0 --port 8000
