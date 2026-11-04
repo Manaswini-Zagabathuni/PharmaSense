@@ -1,0 +1,105 @@
+export type UndefinedMetricReason =
+  | 'EMPTY_POPULATION'
+  | 'NO_DRUG_REPORTS'
+  | 'NO_NON_DRUG_REPORTS'
+  | 'ZERO_COMPARATOR_REACTION_COUNT'
+  | 'ZERO_DRUG_NON_REACTION_COUNT'
+  | 'ZERO_NON_DRUG_REACTION_COUNT'
+  | 'ZERO_CELL_CONFIDENCE_INTERVAL'
+  | 'NON_FINITE_RESULT'
+
+export type SignalEligibilityReason =
+  | 'PAIR_NOT_OBSERVED'
+  | 'BELOW_MINIMUM_PAIR_REPORTS'
+  | 'BELOW_MINIMUM_POPULATION'
+  | 'PRR_UNDEFINED'
+  | 'ROR_UNDEFINED'
+  | 'ROR_CONFIDENCE_INTERVAL_UNDEFINED'
+
+export type PriorityExclusionReason =
+  | 'NOT_ELIGIBLE'
+  | 'LOWER_CONFIDENCE_BOUND_NOT_ABOVE_MINIMUM'
+
+export interface MetricEstimate {
+  value: number | null
+  undefined_reason: UndefinedMetricReason | null
+}
+
+export interface RorConfidenceInterval {
+  confidence_level: number
+  lower_bound: number | null
+  upper_bound: number | null
+  undefined_reason: UndefinedMetricReason | null
+}
+
+export interface SignalThresholds {
+  minimum_pair_reports: number
+  minimum_population: number | null
+  minimum_ror_lower_bound: number
+}
+
+export interface Signal {
+  drug_name: string
+  reaction_term: string
+  analysis_population: number
+  a: number
+  b: number
+  c: number
+  d: number
+  prr: MetricEstimate
+  ror: MetricEstimate
+  ror_confidence_interval: RorConfidenceInterval
+  thresholds: SignalThresholds
+  is_observed: boolean
+  metrics_calculable: boolean
+  statistically_evaluable: boolean
+  eligible_for_prioritization: boolean
+  ineligibility_reasons: SignalEligibilityReason[]
+  is_prioritized: boolean
+  priority_exclusion_reason: PriorityExclusionReason | null
+}
+
+export interface SignalListResponse {
+  items: Signal[]
+  returned_count: number
+  limit: number
+  research_notice: string
+}
+
+export interface SignalDetailResponse {
+  signal: Signal
+  research_notice: string
+}
+
+export interface DrugSummary {
+  drug_name: string
+  report_count: number
+  case_count: number
+}
+
+export interface DrugListResponse {
+  items: DrugSummary[]
+  returned_count: number
+  limit: number
+  offset: number
+  research_notice: string
+}
+
+export interface DrugReactionSummary {
+  drug_name: string
+  reaction_term: string
+  report_count: number
+  case_count: number
+}
+
+export interface DrugReactionListResponse {
+  drug_name: string
+  items: DrugReactionSummary[]
+  returned_count: number
+  limit: number
+  research_notice: string
+}
+
+export interface ErrorResponse {
+  detail: string
+}

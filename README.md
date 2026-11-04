@@ -18,9 +18,11 @@ streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII
 Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. Phase 1D adds restartable,
 checksum-gated database ingestion and reconciliation. Phase 2 adds read-only latest-version,
 drug-reaction, disproportionality, confidence, and prioritization analytics. Phase 3A exposes
-those analytics through a bounded, read-only API. See
+those analytics through a bounded, read-only API, and Phase 3B provides a responsive React
+research dashboard over that API. See
 [the architecture](docs/architecture/overview.md),
 [analytics API](docs/architecture/analytics-api.md),
+[frontend dashboard](docs/architecture/frontend-dashboard.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
 [implemented schema](docs/architecture/faers-schema.md),
 [official data sources](docs/data-sources/official-sources.md), and
@@ -32,7 +34,7 @@ The latest environment-specific check record is in
 
 - `mysql`: structured storage and Alembic migration target
 - `api`: FastAPI system endpoints and versioned read-only FAERS analytics
-- `web`: React, TypeScript, and Vite research interface shell
+- `web`: React, TypeScript, and Vite read-only analytics dashboard
 
 There is intentionally no Redis, Kafka, workflow orchestrator, retrieval service, or worker yet.
 
@@ -97,6 +99,11 @@ Interactive development documentation at `/docs` includes the Phase 3A endpoints
 
 All analytics are research-only reporting patterns. They do not establish causality or incidence
 and must not be used for clinical decision-making.
+
+The dashboard opens on Signal Explorer and provides a Drug Explorer workspace. Vite uses
+`VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to
+`VITE_API_PROXY_TARGET=http://localhost:8000` during local development. Do not place secrets in
+`VITE_*` variables because Vite bundles them into browser code.
 
 The API container runs `alembic upgrade head` before startup. For local MySQL, apply the same
 migration explicitly and inspect the active revision:

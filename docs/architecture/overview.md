@@ -19,6 +19,8 @@ Phase 2D adds uncorrected log-ROR confidence intervals, explicit sufficiency thr
 deterministic lower-bound-first prioritization rule for research review.
 Phase 3A exposes these analytics through bounded, read-only FastAPI routes backed by a separate
 application service; route handlers do not contain statistical or query logic.
+Phase 3B adds a responsive React dashboard that consumes those routes through a typed client and
+does not reproduce analytics calculations in browser code.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -72,6 +74,8 @@ Confidence analytics and ranking rules are specified in
 [the FAERS signal prioritization design](faers-signal-prioritization.md).
 The public HTTP contracts and error behavior are described in
 [the read-only analytics API design](analytics-api.md).
+The browser client, workspaces, configuration, and accessibility boundaries are described in
+[the read-only analytics dashboard design](frontend-dashboard.md).
 
 ## Runtime topology
 
