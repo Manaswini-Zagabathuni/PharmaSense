@@ -15,6 +15,8 @@ Phase 2B builds source-name drug and report-level drug-reaction co-reporting sum
 resolved population without persisting derived data.
 Phase 2C adds report-level contingency aggregation and guarded, uncorrected PRR and ROR point
 estimates without introducing signal claims or clinical interpretation.
+Phase 2D adds uncorrected log-ROR confidence intervals, explicit sufficiency thresholds, and a
+deterministic lower-bound-first prioritization rule for research review.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -64,6 +66,8 @@ Drug and drug-reaction counting rules are specified in
 [the FAERS drug-reaction analytics design](faers-drug-reaction-analytics.md).
 Statistical counting, formulas, and undefined-result rules are specified in
 [the FAERS signal detection design](faers-signal-detection.md).
+Confidence analytics and ranking rules are specified in
+[the FAERS signal prioritization design](faers-signal-prioritization.md).
 
 ## Runtime topology
 

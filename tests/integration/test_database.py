@@ -14,6 +14,10 @@ from pharmasense.analytics.faers_versions import (
     latest_report_versions_statement,
     report_version_resolution_statement,
 )
+from pharmasense.analytics.prioritization import (
+    SignalThresholds,
+    signal_candidate_contingencies_statement,
+)
 from pharmasense.analytics.signals import (
     drug_reaction_contingency_statement,
     observed_drug_reaction_contingencies_statement,
@@ -102,3 +106,21 @@ def test_signal_contingency_queries_execute_on_mysql() -> None:
         engine.dispose()
 
     assert row._mapping["population_size"] >= 0
+
+
+@pytest.mark.integration
+def test_signal_candidate_query_executes_on_mysql() -> None:
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if database_url is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+
+    engine = create_engine(database_url, pool_pre_ping=True)
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                signal_candidate_contingencies_statement(
+                    SignalThresholds(minimum_pair_reports=1, minimum_population=1)
+                ).limit(1)
+            ).all()
+    finally:
+        engine.dispose()

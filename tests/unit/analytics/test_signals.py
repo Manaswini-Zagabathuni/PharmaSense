@@ -10,6 +10,10 @@ from sqlalchemy.dialects import mysql
 from sqlalchemy.engine import RowMapping
 from sqlalchemy.orm import Session
 
+from pharmasense.analytics.prioritization import (
+    SignalThresholds,
+    signal_candidate_contingencies_statement,
+)
 from pharmasense.analytics.signals import (
     ContingencyTable,
     UndefinedMetricReason,
@@ -271,9 +275,39 @@ def test_signal_statements_compile_for_mysql_with_bound_filters() -> None:
     selected = drug_reaction_contingency_statement("TARGET", "EVENT")
     selected_compiled = selected.compile(dialect=dialect)
     observed_sql = str(observed_drug_reaction_contingencies_statement().compile(dialect=dialect))
+    candidate_sql = str(
+        signal_candidate_contingencies_statement(
+            SignalThresholds(minimum_pair_reports=2, minimum_population=5)
+        ).compile(dialect=dialect)
+    )
 
     assert "TARGET" not in str(selected_compiled)
     assert "EVENT" not in str(selected_compiled)
     assert selected_compiled.params
     assert "resolved_latest_report_versions" in observed_sql
     assert "drug_report_presence" in observed_sql
+    assert "observed_signal_contingencies" in candidate_sql
+
+
+def test_candidate_query_reuses_resolved_deduplicated_contingencies(session: Session) -> None:
+    rows = session.execute(
+        signal_candidate_contingencies_statement(
+            SignalThresholds(minimum_pair_reports=2, minimum_population=5)
+        )
+    ).mappings()
+
+    assert {
+        (row["drug_name"], row["reaction_term"], row["population_size"], row["a"]) for row in rows
+    } == {
+        ("OTHER", "EVENT", 5, 2),
+        ("OTHER", "OTHER EVENT", 5, 2),
+        ("TARGET", "OTHER EVENT", 5, 2),
+    }
+    assert (
+        session.execute(
+            signal_candidate_contingencies_statement(
+                SignalThresholds(minimum_pair_reports=1, minimum_population=6)
+            )
+        ).all()
+        == []
+    )

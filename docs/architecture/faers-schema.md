@@ -91,5 +91,5 @@ delete superseded reports. See [FAERS latest-version resolution](faers-latest-ve
 ## Deferred
 
 Parsed precision-aware date fields, product/terminology normalization, statistical signal
-thresholds, uncertainty intervals, multiple-comparison controls, and historical as-of version
-resolution remain outside Phase 2C.
+significance tests, multiple-comparison controls, role-specific populations, and historical as-of
+version resolution remain outside Phase 2D.

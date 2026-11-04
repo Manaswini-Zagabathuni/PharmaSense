@@ -70,9 +70,10 @@ never returned as a signal value.
 - Negative, non-integer, or internally impossible marginal counts raise `ValueError` rather than
   producing a metric.
 
-Small counts can yield unstable finite estimates. Phase 2C deliberately adds no minimum-count
-threshold, confidence interval, significance test, multiple-comparison adjustment, or signal
-classification rule. Those require a separately reviewed statistical phase.
+Small counts can yield unstable finite estimates. Phase 2C itself adds no minimum-count threshold,
+confidence interval, significance test, multiple-comparison adjustment, or signal classification
+rule. Phase 2D builds confidence and prioritization as a separate layer without changing these
+Phase 2C calculations.
 
 ## Interfaces and boundaries
 
