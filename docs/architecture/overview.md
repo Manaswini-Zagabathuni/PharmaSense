@@ -13,6 +13,8 @@ database ingestion and reconciliation without adding a worker service.
 Phase 2A adds reusable, read-only latest-report-version resolution in the analytics layer.
 Phase 2B builds source-name drug and report-level drug-reaction co-reporting summaries on that
 resolved population without persisting derived data.
+Phase 2C adds report-level contingency aggregation and guarded, uncorrected PRR and ROR point
+estimates without introducing signal claims or clinical interpretation.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -60,6 +62,8 @@ Latest-version selection is specified in
 [the FAERS latest-version resolution design](faers-latest-version.md).
 Drug and drug-reaction counting rules are specified in
 [the FAERS drug-reaction analytics design](faers-drug-reaction-analytics.md).
+Statistical counting, formulas, and undefined-result rules are specified in
+[the FAERS signal detection design](faers-signal-detection.md).
 
 ## Runtime topology
 

@@ -65,6 +65,10 @@ reproducible grouping.
 - `drug_reaction_summary_statement()`
 - `most_reported_reactions_for_drug_statement(drug_name, limit=None)`
 
+It also exposes resolved-report, drug-presence, reaction-presence, and pair-presence CTE builders
+so later analytics can reuse these exact grains instead of recreating their population or
+deduplication rules.
+
 The statements remain transport-independent and composable. Phase 2B adds no API route, schema
 table, migration, persisted aggregate, statistical signal calculation, or user interface.
 

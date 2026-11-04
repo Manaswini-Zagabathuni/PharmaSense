@@ -10,18 +10,16 @@ from pharmasense.analytics.faers_versions import latest_report_versions_statemen
 from pharmasense.db.models import FaersDrug, FaersReaction
 
 
-def _latest_report_keys() -> CTE:
+def resolved_latest_report_keys_cte() -> CTE:
     """Return the Phase 2A population at its report-and-case key grain."""
 
     latest = latest_report_versions_statement().subquery("resolved_latest_report_versions")
     return select(latest.c.primary_id, latest.c.case_id).cte("resolved_latest_report_keys")
 
 
-def _drug_report_presence(latest: CTE | None = None) -> CTE:
+def drug_report_presence_cte(latest: CTE) -> CTE:
     """Return one row per resolved report, case, and source drug-name group."""
 
-    if latest is None:
-        latest = _latest_report_keys()
     return (
         select(
             latest.c.primary_id,
@@ -34,7 +32,7 @@ def _drug_report_presence(latest: CTE | None = None) -> CTE:
     )
 
 
-def _reaction_report_presence(latest: CTE) -> CTE:
+def reaction_report_presence_cte(latest: CTE) -> CTE:
     """Return one row per resolved report, case, and source reaction-term group."""
 
     return (
@@ -49,12 +47,9 @@ def _reaction_report_presence(latest: CTE) -> CTE:
     )
 
 
-def _drug_reaction_report_presence() -> CTE:
+def drug_reaction_report_presence_cte(drugs: CTE, reactions: CTE) -> CTE:
     """Return one row per resolved report, drug-name group, and reaction-term group."""
 
-    latest = _latest_report_keys()
-    drugs = _drug_report_presence(latest)
-    reactions = _reaction_report_presence(latest)
     return (
         select(
             drugs.c.primary_id,
@@ -74,7 +69,8 @@ def _drug_reaction_report_presence() -> CTE:
 def drug_summary_statement() -> Select[tuple[str, int, int]]:
     """Count resolved latest reports and cases containing each source drug-name group."""
 
-    presence = _drug_report_presence()
+    latest = resolved_latest_report_keys_cte()
+    presence = drug_report_presence_cte(latest)
     return (
         select(
             presence.c.drug_name,
@@ -89,7 +85,10 @@ def drug_summary_statement() -> Select[tuple[str, int, int]]:
 def _drug_reaction_summary_statement(
     drug_name: str | None = None,
 ) -> Select[tuple[str, str, int, int]]:
-    presence = _drug_reaction_report_presence()
+    latest = resolved_latest_report_keys_cte()
+    drugs = drug_report_presence_cte(latest)
+    reactions = reaction_report_presence_cte(latest)
+    presence = drug_reaction_report_presence_cte(drugs, reactions)
     statement = (
         select(
             presence.c.drug_name,

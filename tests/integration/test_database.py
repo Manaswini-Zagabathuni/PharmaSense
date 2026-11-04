@@ -14,6 +14,10 @@ from pharmasense.analytics.faers_versions import (
     latest_report_versions_statement,
     report_version_resolution_statement,
 )
+from pharmasense.analytics.signals import (
+    drug_reaction_contingency_statement,
+    observed_drug_reaction_contingencies_statement,
+)
 
 EXPECTED_PHASE_1C_TABLES = {
     "source_artifact",
@@ -77,3 +81,24 @@ def test_drug_reaction_analytics_queries_execute_on_mysql() -> None:
             ).all()
     finally:
         engine.dispose()
+
+
+@pytest.mark.integration
+def test_signal_contingency_queries_execute_on_mysql() -> None:
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if database_url is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+
+    engine = create_engine(database_url, pool_pre_ping=True)
+    try:
+        with engine.connect() as connection:
+            row = connection.execute(
+                drug_reaction_contingency_statement(
+                    "SYNTHETIC-NOT-PRESENT", "SYNTHETIC-NOT-PRESENT"
+                )
+            ).one()
+            connection.execute(observed_drug_reaction_contingencies_statement().limit(1)).all()
+    finally:
+        engine.dispose()
+
+    assert row._mapping["population_size"] >= 0
