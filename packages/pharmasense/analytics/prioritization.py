@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
+from heapq import nsmallest
 from math import exp, isfinite, log, sqrt
 from statistics import NormalDist
 
@@ -247,20 +248,27 @@ def signal_candidate_contingencies_statement(
     )
 
 
-def rank_prioritized_signals(results: Iterable[SignalResult]) -> list[SignalResult]:
-    """Rank qualifying signals by conservative evidence with deterministic tie-breaks."""
+def rank_prioritized_signals(
+    results: Iterable[SignalResult], *, limit: int | None = None
+) -> list[SignalResult]:
+    """Rank qualifying signals with deterministic tie-breaks and optional bounded memory."""
 
-    prioritized = [result for result in results if result.is_prioritized]
-    return sorted(
-        prioritized,
-        key=lambda result: (
-            -_defined_value(result.ror_confidence_interval.lower_bound),
-            -result.a,
-            -_defined_value(result.ror.value),
-            -_defined_value(result.prr.value),
-            result.drug_name,
-            result.reaction_term,
-        ),
+    if limit is not None and (type(limit) is not int or limit < 1):
+        raise ValueError("limit must be a positive integer or None")
+    prioritized = (result for result in results if result.is_prioritized)
+    if limit is not None:
+        return nsmallest(limit, prioritized, key=_priority_key)
+    return sorted(prioritized, key=_priority_key)
+
+
+def _priority_key(result: SignalResult) -> tuple[float, int, float, float, str, str]:
+    return (
+        -_defined_value(result.ror_confidence_interval.lower_bound),
+        -result.a,
+        -_defined_value(result.ror.value),
+        -_defined_value(result.prr.value),
+        result.drug_name,
+        result.reaction_term,
     )
 
 

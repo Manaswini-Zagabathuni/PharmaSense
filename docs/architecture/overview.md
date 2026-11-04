@@ -17,6 +17,8 @@ Phase 2C adds report-level contingency aggregation and guarded, uncorrected PRR 
 estimates without introducing signal claims or clinical interpretation.
 Phase 2D adds uncorrected log-ROR confidence intervals, explicit sufficiency thresholds, and a
 deterministic lower-bound-first prioritization rule for research review.
+Phase 3A exposes these analytics through bounded, read-only FastAPI routes backed by a separate
+application service; route handlers do not contain statistical or query logic.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -68,6 +70,8 @@ Statistical counting, formulas, and undefined-result rules are specified in
 [the FAERS signal detection design](faers-signal-detection.md).
 Confidence analytics and ranking rules are specified in
 [the FAERS signal prioritization design](faers-signal-prioritization.md).
+The public HTTP contracts and error behavior are described in
+[the read-only analytics API design](analytics-api.md).
 
 ## Runtime topology
 

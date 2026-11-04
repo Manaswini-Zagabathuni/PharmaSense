@@ -16,8 +16,11 @@ safety actions and labeling evidence.
 Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design, Phase 1B adds a
 streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII archive, and
 Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. Phase 1D adds restartable,
-checksum-gated database ingestion and reconciliation. It does not calculate signals. See
+checksum-gated database ingestion and reconciliation. Phase 2 adds read-only latest-version,
+drug-reaction, disproportionality, confidence, and prioritization analytics. Phase 3A exposes
+those analytics through a bounded, read-only API. See
 [the architecture](docs/architecture/overview.md),
+[analytics API](docs/architecture/analytics-api.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
 [implemented schema](docs/architecture/faers-schema.md),
 [official data sources](docs/data-sources/official-sources.md), and
@@ -28,7 +31,7 @@ The latest environment-specific check record is in
 ## Implemented services
 
 - `mysql`: structured storage and Alembic migration target
-- `api`: FastAPI liveness and database-backed readiness endpoints
+- `api`: FastAPI system endpoints and versioned read-only FAERS analytics
 - `web`: React, TypeScript, and Vite research interface shell
 
 There is intentionally no Redis, Kafka, workflow orchestrator, retrieval service, or worker yet.
@@ -85,6 +88,15 @@ pnpm --dir apps/web dev
 
 The liveness endpoint confirms the process can serve requests. The readiness endpoint performs
 `SELECT 1` against MySQL and returns HTTP 503 if configuration or connectivity is unavailable.
+Interactive development documentation at `/docs` includes the Phase 3A endpoints:
+
+- `GET /api/v1/signals`
+- `GET /api/v1/signals/{drug_name}/reactions/{reaction_term}`
+- `GET /api/v1/drugs`
+- `GET /api/v1/drugs/{drug_name}/reactions`
+
+All analytics are research-only reporting patterns. They do not establish causality or incidence
+and must not be used for clinical decision-making.
 
 The API container runs `alembic upgrade head` before startup. For local MySQL, apply the same
 migration explicitly and inspect the active revision:

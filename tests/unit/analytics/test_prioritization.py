@@ -151,3 +151,11 @@ def test_ranking_uses_lower_bound_then_counts_metrics_and_lexical_ties() -> None
         ("A DRUG", "Z EVENT"),
         ("B DRUG", "A EVENT"),
     ]
+
+    limited = rank_prioritized_signals(reversed(results), limit=2)
+    assert [result.drug_name for result in limited] == ["STRONG DRUG", "A DRUG"]
+
+
+def test_ranking_limit_is_validated() -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        rank_prioritized_signals([], limit=0)
