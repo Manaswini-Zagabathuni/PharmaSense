@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 
 import { App } from '../App'
@@ -18,17 +18,22 @@ describe.skipIf(!liveEnabled)('live full-stack dashboard', () => {
     const signalDrug = await screen.findByText('DEMO DRUG ALPHA', {}, { timeout: 15_000 })
     const signalRow = signalDrug.closest('tr')
     expect(signalRow).not.toBeNull()
-    within(signalRow as HTMLTableRowElement).getByRole('button', { name: 'Inspect' }).click()
+    fireEvent.click(
+      within(signalRow as HTMLTableRowElement).getByRole('button', { name: 'Inspect' }),
+    )
     expect(await screen.findByText('Contingency counts')).toBeInTheDocument()
     expect(screen.getByText('Prioritized')).toBeInTheDocument()
 
-    screen.getByRole('button', { name: 'Drugs' }).click()
+    fireEvent.click(screen.getByRole('button', { name: 'Drugs' }))
+    expect(
+      await screen.findByRole('heading', { name: 'Drug Explorer' }, { timeout: 15_000 }),
+    ).toBeInTheDocument()
     const listedDrug = await screen.findByText('DEMO DRUG ALPHA', {}, { timeout: 15_000 })
     const drugRow = listedDrug.closest('tr')
     expect(drugRow).not.toBeNull()
-    within(drugRow as HTMLTableRowElement)
-      .getByRole('button', { name: 'View reactions' })
-      .click()
+    fireEvent.click(
+      within(drugRow as HTMLTableRowElement).getByRole('button', { name: 'View reactions' }),
+    )
     expect(await screen.findByText('DEMO REACTION ALPHA')).toBeInTheDocument()
     expect(screen.getByText(/Co-reporting does not establish causality/)).toBeInTheDocument()
   }, 30_000)
