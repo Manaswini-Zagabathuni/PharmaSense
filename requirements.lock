@@ -4,8 +4,10 @@ alembic==1.14.1
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
+cffi==2.1.1
 click==8.5.0
 coverage==7.16.2
+cryptography==50.0.2
 fastapi==0.162.0
 h11==0.16.0
 httpcore2==2.16.0
@@ -28,6 +30,7 @@ Pygments==2.21.0
 pytest==9.2.0
 pytest-cov==6.0.0
 python-dotenv==1.2.4
+pycparser==3.12
 PyYAML==6.0.3
 ruff==0.9.7
 SQLAlchemy==2.0.38
