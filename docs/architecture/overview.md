@@ -111,6 +111,11 @@ reuses the resolved latest-report population, applies literal case-insensitive m
 SQL, and returns only minimal source terms. The UI keeps manual entry available. Search semantics and
 non-clinical safeguards are documented in [the source-term discovery design](source-term-discovery.md).
 
+Phase 6C adds browser-native analysis URLs for Historical Trends and Signal Comparison. URLs contain
+only validated user configuration, restore forms without submitting analytics, and never contain
+results or source records. The format and rejection rules are documented in
+[the reproducible analysis URL design](reproducible-analysis-urls.md).
+
 ## Runtime topology
 
 Phase 0 runs three services:

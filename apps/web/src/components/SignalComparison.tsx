@@ -1,10 +1,19 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import {
+  comparisonAnalysisUrl,
+  hasComparisonUrlParameters,
+  isValidAnalysisTerm,
+  parseComparisonUrlState,
+  replaceBrowserUrl,
+  workspaceUrl,
+} from '../analysisUrlState'
 import { ApiError, getSignalDetail } from '../api/client'
 import type { SignalDetailResponse } from '../api/types'
 import { EmptyPanel, ErrorPanel, LoadingPanel } from './feedback'
 import { formatCount, formatRatio, formatReason } from './format'
 import { SourceTermCombobox } from './SourceTermCombobox'
+import { AnalysisLinkControl } from './AnalysisLinkControl'
 
 const MINIMUM_PAIRS = 2
 const MAXIMUM_PAIRS = 4
@@ -35,13 +44,50 @@ const INITIAL_PAIRS: PairDraft[] = [
   { id: 2, drugName: '', reactionTerm: '' },
 ]
 
+function validPairSelections(pairs: PairDraft[]): PairSelection[] | null {
+  if (pairs.length < MINIMUM_PAIRS || pairs.length > MAXIMUM_PAIRS) return null
+  const selections = pairs.map((pair) => ({
+    drugName: pair.drugName.trim(),
+    reactionTerm: pair.reactionTerm.trim(),
+  }))
+  if (
+    selections.some(
+      (pair) =>
+        !isValidAnalysisTerm(pair.drugName) || !isValidAnalysisTerm(pair.reactionTerm),
+    )
+  ) {
+    return null
+  }
+  const identities = selections.map(
+    (pair) => `${pair.drugName.toLowerCase()}\u0000${pair.reactionTerm.toLowerCase()}`,
+  )
+  return new Set(identities).size === identities.length ? selections : null
+}
+
 export function SignalComparison() {
-  const [pairs, setPairs] = useState(INITIAL_PAIRS)
-  const [nextId, setNextId] = useState(3)
+  const [restoredPairs] = useState(() => parseComparisonUrlState(window.location.search))
+  const [pairs, setPairs] = useState<PairDraft[]>(() =>
+    restoredPairs?.map((pair, index) => ({ ...pair, id: index + 1 })) ?? INITIAL_PAIRS,
+  )
+  const [nextId, setNextId] = useState((restoredPairs?.length ?? 2) + 1)
   const [submitted, setSubmitted] = useState<PairSelection[] | null>(null)
   const [retry, setRetry] = useState(0)
   const [state, setState] = useState<ComparisonState>({ status: 'idle' })
-  const [validationMessage, setValidationMessage] = useState<string | null>(null)
+  const [validationMessage, setValidationMessage] = useState<string | null>(() =>
+    hasComparisonUrlParameters(window.location.search) && restoredPairs === null
+      ? 'The shared comparison configuration was incomplete, duplicated, or outside the 2–4 pair limit.'
+      : null,
+  )
+
+  const validSelections = useMemo(() => validPairSelections(pairs), [pairs])
+  const analysisUrl = useMemo(
+    () => (validSelections === null ? null : comparisonAnalysisUrl(validSelections)),
+    [validSelections],
+  )
+
+  useEffect(() => {
+    replaceBrowserUrl(analysisUrl ?? workspaceUrl('comparison'))
+  }, [analysisUrl])
 
   useEffect(() => {
     if (submitted === null) return
@@ -90,18 +136,12 @@ export function SignalComparison() {
 
   function submitComparison(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const selections = pairs.map((pair) => ({
-      drugName: pair.drugName.trim(),
-      reactionTerm: pair.reactionTerm.trim(),
-    }))
-    if (selections.some((pair) => !pair.drugName || !pair.reactionTerm)) {
+    const selections = validPairSelections(pairs)
+    if (selections === null && pairs.some((pair) => !pair.drugName.trim() || !pair.reactionTerm.trim())) {
       setValidationMessage('Enter both a drug name and reaction term for every pair.')
       return
     }
-    const identities = selections.map(
-      (pair) => `${pair.drugName.toLowerCase()}\u0000${pair.reactionTerm.toLowerCase()}`,
-    )
-    if (new Set(identities).size !== identities.length) {
+    if (selections === null) {
       setValidationMessage('Each selected drug–reaction pair must be unique.')
       return
     }
@@ -189,6 +229,7 @@ export function SignalComparison() {
           </button>
           <button className="button button--primary" type="submit">Compare signals</button>
         </div>
+        <AnalysisLinkControl url={analysisUrl} />
       </form>
 
       {validationMessage && (

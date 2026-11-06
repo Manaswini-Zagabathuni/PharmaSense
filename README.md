@@ -158,6 +158,10 @@ Historical Trends and Signal Comparison also offer bounded, optional source-term
 two characters. Returned spellings come from the resolved FAERS population and are not normalized
 concepts or clinical recommendations; see the
 [source-term discovery design](docs/architecture/source-term-discovery.md).
+Complete Historical Trends and Signal Comparison forms can also be bookmarked or copied as
+configuration-only links. Opening a link restores the form without storing or automatically
+replaying results; a later analysis uses currently loaded data and may produce different values.
+See [reproducible analysis URLs](docs/architecture/reproducible-analysis-urls.md).
 
 Vite uses
 `VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to

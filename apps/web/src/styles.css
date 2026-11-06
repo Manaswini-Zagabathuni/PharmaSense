@@ -39,6 +39,10 @@ main { width: min(76rem, calc(100% - 2rem)); margin: 0 auto; padding: clamp(2.5r
 .source-term-combobox__popover [role='option']:hover, .source-term-combobox__popover [role='option'][aria-selected='true'] { background: #e4f2ed; }
 .source-term-combobox__popover p { margin: 0.35rem; color: #526b65; font-size: 0.78rem; }
 .source-term-combobox__popover small { display: block; margin: 0.45rem 0.35rem 0.2rem; color: #657a75; font-size: 0.68rem; }
+.analysis-link-control { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.75rem; margin-top: 0.75rem; }
+.analysis-link-control__feedback { color: #526b65; font-size: 0.78rem; }
+.analysis-link-control small { flex-basis: 100%; color: #657a75; font-size: 0.72rem; }
+.comparison-form > .analysis-link-control { padding: 0 1.2rem 1rem; }
 input, select { width: 100%; min-height: 2.7rem; padding: 0.55rem 0.7rem; border: 1px solid #c8d6d2; border-radius: 0.6rem; color: #173b34; background: #fbfdfc; }
 .button { min-height: 2.7rem; padding: 0.58rem 1rem; border-radius: 0.65rem; font-weight: 750; }
 .button--primary { border: 1px solid #176b5b; color: #fff; background: #176b5b; }

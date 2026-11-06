@@ -443,3 +443,22 @@ test('opens the bounded Signal Comparison workspace from primary navigation', ()
   expect(screen.getByRole('button', { name: 'Signals' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Historical Trends' })).toBeInTheDocument()
 })
+
+test('restores the URL-selected workspace and configuration on a fresh render', () => {
+  window.history.replaceState(
+    null,
+    '',
+    '/?workspace=comparison&drug=First&reaction=Event+A&drug=Second&reaction=Event+B',
+  )
+  vi.stubGlobal('fetch', vi.fn())
+
+  render(<App />)
+
+  expect(screen.getByRole('heading', { name: 'Signal Comparison' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Drug name for pair 1')).toHaveValue('First')
+  expect(screen.getByLabelText('Reaction term for pair 2')).toHaveValue('Event B')
+  expect(screen.getByRole('button', { name: 'Signal Comparison' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})

@@ -157,6 +157,80 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+test('restores a valid shared configuration without automatically running the analysis', async () => {
+  window.history.replaceState(
+    null,
+    '',
+    '/?workspace=historical&drug=Drug+A&reaction=Event+B&start=2023Q1&end=2023Q2',
+  )
+  const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+    const url = requestUrl(input)
+    if (url.includes('/source-snapshots?')) return Promise.resolve(jsonResponse(snapshots))
+    if (url.includes('/discovery/')) {
+      return Promise.resolve(
+        jsonResponse({
+          items: [],
+          returned_count: 0,
+          limit: 10,
+          research_notice: 'Research only.',
+          source_term_notice: 'Source derived.',
+        }),
+      )
+    }
+    return Promise.reject(new Error(`Unexpected URL: ${url}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(<HistoricalTrends />)
+
+  expect(await screen.findByText('Choose a drug–reaction pair')).toBeInTheDocument()
+  expect(screen.getByLabelText('Drug name')).toHaveValue('Drug A')
+  expect(screen.getByLabelText('Reaction term')).toHaveValue('Event B')
+  expect(screen.getByLabelText('Start quarter')).toHaveValue('2023Q1')
+  expect(screen.getByLabelText('End quarter')).toHaveValue('2023Q2')
+  expect(screen.getByRole('button', { name: 'Copy analysis link' })).toBeEnabled()
+  const requestedUrls = (fetchMock.mock.calls as [RequestInfo | URL][]).map(([input]) =>
+    requestUrl(input),
+  )
+  expect(requestedUrls.some((url) => url.includes('/historical/signals/'))).toBe(false)
+})
+
+test('rejects unavailable restored quarters and returns to the normal initial state', async () => {
+  window.history.replaceState(
+    null,
+    '',
+    '/?workspace=historical&drug=Drug+A&reaction=Event+B&start=2022Q1&end=2022Q2',
+  )
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(snapshots)))
+
+  render(<HistoricalTrends />)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'did not match available quarters',
+  )
+  expect(screen.getByLabelText('Drug name')).toHaveValue('')
+  expect(screen.getByLabelText('Reaction term')).toHaveValue('')
+  expect(screen.getByLabelText('Start quarter')).toHaveValue('2023Q1')
+  expect(screen.getByLabelText('End quarter')).toHaveValue('2023Q2')
+  expect(window.location.search).toBe('?workspace=historical')
+})
+
+test('synchronizes a complete historical configuration into the URL', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(snapshots)))
+  render(<HistoricalTrends />)
+  await screen.findByText('Choose a drug–reaction pair')
+
+  fireEvent.change(screen.getByLabelText('Drug name'), { target: { value: 'Drug A/B' } })
+  fireEvent.change(screen.getByLabelText('Reaction term'), { target: { value: 'Event C' } })
+
+  await waitFor(() => expect(new URLSearchParams(window.location.search).get('drug')).toBe('Drug A/B'))
+  const params = new URLSearchParams(window.location.search)
+  expect(params.get('workspace')).toBe('historical')
+  expect(params.get('reaction')).toBe('Event C')
+  expect(params.get('start')).toBe('2023Q1')
+  expect(params.get('end')).toBe('2023Q2')
+})
+
 test('renders API-provided quarter results, diagnostics, and source provenance', async () => {
   const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
     const url = requestUrl(input)

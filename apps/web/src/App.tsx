@@ -1,14 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import { type AnalysisWorkspace, replaceBrowserUrl, workspaceFromSearch, workspaceUrl } from './analysisUrlState'
 import { DrugExplorer } from './components/DrugExplorer'
 import { HistoricalTrends } from './components/HistoricalTrends'
 import { SignalComparison } from './components/SignalComparison'
 import { SignalExplorer } from './components/SignalExplorer'
 
-type Workspace = 'signals' | 'drugs' | 'historical' | 'comparison'
-
 export function App() {
-  const [workspace, setWorkspace] = useState<Workspace>('signals')
+  const [workspace, setWorkspace] = useState<AnalysisWorkspace>(() =>
+    workspaceFromSearch(window.location.search),
+  )
+
+  useEffect(() => {
+    function restoreWorkspace() {
+      setWorkspace(workspaceFromSearch(window.location.search))
+    }
+    window.addEventListener('popstate', restoreWorkspace)
+    return () => window.removeEventListener('popstate', restoreWorkspace)
+  }, [])
+
+  function selectWorkspace(nextWorkspace: AnalysisWorkspace) {
+    setWorkspace(nextWorkspace)
+    replaceBrowserUrl(workspaceUrl(nextWorkspace))
+  }
 
   return (
     <div className="app-shell">
@@ -18,10 +32,10 @@ export function App() {
           <span><strong>PharmaSense</strong><small>Drug safety intelligence</small></span>
         </a>
         <nav className="primary-nav" aria-label="Analytics workspaces">
-          <button type="button" aria-current={workspace === 'signals' ? 'page' : undefined} onClick={() => setWorkspace('signals')}>Signals</button>
-          <button type="button" aria-current={workspace === 'drugs' ? 'page' : undefined} onClick={() => setWorkspace('drugs')}>Drugs</button>
-          <button type="button" aria-current={workspace === 'historical' ? 'page' : undefined} onClick={() => setWorkspace('historical')}>Historical Trends</button>
-          <button type="button" aria-current={workspace === 'comparison' ? 'page' : undefined} onClick={() => setWorkspace('comparison')}>Signal Comparison</button>
+          <button type="button" aria-current={workspace === 'signals' ? 'page' : undefined} onClick={() => selectWorkspace('signals')}>Signals</button>
+          <button type="button" aria-current={workspace === 'drugs' ? 'page' : undefined} onClick={() => selectWorkspace('drugs')}>Drugs</button>
+          <button type="button" aria-current={workspace === 'historical' ? 'page' : undefined} onClick={() => selectWorkspace('historical')}>Historical Trends</button>
+          <button type="button" aria-current={workspace === 'comparison' ? 'page' : undefined} onClick={() => selectWorkspace('comparison')}>Signal Comparison</button>
         </nav>
         <span className="read-only-badge">Read-only research</span>
       </header>

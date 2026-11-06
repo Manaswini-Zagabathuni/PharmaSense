@@ -97,3 +97,8 @@ architecture overview.
 Historical Trends and Signal Comparison use the shared bounded source-term combobox documented in
 [source-term discovery](source-term-discovery.md). Suggestions are optional source-derived values;
 manual entry remains available and no scientific calculation or normalization occurs in React.
+
+Both workspaces can serialize a complete validated form into a bookmarkable URL and copy that URL
+through an accessible control. Restoration fills the form but does not automatically execute the
+analysis. See [reproducible analysis URLs](reproducible-analysis-urls.md) for the parameter contract,
+validation rules, and configuration-versus-result boundary.

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 
 import type { Signal, SignalDetailResponse } from '../api/types'
@@ -93,6 +93,59 @@ function fillPair(index: number, drugName: string, reactionTerm: string) {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+test('restores two to four ordered pairs without automatically requesting signal results', () => {
+  window.history.replaceState(
+    null,
+    '',
+    '/?workspace=comparison&drug=First&reaction=Event+A&drug=Second&reaction=Event+B&drug=Third&reaction=Event+C',
+  )
+  const fetchMock = vi.fn()
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(<SignalComparison />)
+
+  expect(screen.getByLabelText('Drug name for pair 1')).toHaveValue('First')
+  expect(screen.getByLabelText('Reaction term for pair 1')).toHaveValue('Event A')
+  expect(screen.getByLabelText('Drug name for pair 2')).toHaveValue('Second')
+  expect(screen.getByLabelText('Drug name for pair 3')).toHaveValue('Third')
+  expect(screen.getByText('3 of 4 pairs')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Copy analysis link' })).toBeEnabled()
+  expect(fetchMock).not.toHaveBeenCalled()
+})
+
+test('rejects duplicate shared pairs and restores the bounded empty form', () => {
+  window.history.replaceState(
+    null,
+    '',
+    '/?workspace=comparison&drug=Drug+A&reaction=Event+A&drug=drug+a&reaction=event+a',
+  )
+  vi.stubGlobal('fetch', vi.fn())
+
+  render(<SignalComparison />)
+
+  expect(screen.getByRole('alert')).toHaveTextContent('incomplete, duplicated, or outside')
+  expect(screen.getByText('2 of 4 pairs')).toBeInTheDocument()
+  expect(screen.getByLabelText('Drug name for pair 1')).toHaveValue('')
+  expect(window.location.search).toBe('?workspace=comparison')
+})
+
+test('synchronizes complete comparison pairs in entered order', async () => {
+  vi.stubGlobal('fetch', vi.fn())
+  render(<SignalComparison />)
+
+  fillPair(1, 'First Drug', 'First Event')
+  fillPair(2, 'Second Drug', 'Second Event')
+
+  await waitFor(() =>
+    expect(new URLSearchParams(window.location.search).getAll('drug')).toEqual([
+      'First Drug',
+      'Second Drug',
+    ]),
+  )
+  const params = new URLSearchParams(window.location.search)
+  expect(params.getAll('reaction')).toEqual(['First Event', 'Second Event'])
 })
 
 test('validates complete unique selections and bounds the comparison at four pairs', () => {

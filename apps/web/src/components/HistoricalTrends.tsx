@@ -1,5 +1,13 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 
+import {
+  hasHistoricalUrlParameters,
+  historicalAnalysisUrl,
+  isValidAnalysisTerm,
+  parseHistoricalUrlState,
+  replaceBrowserUrl,
+  workspaceUrl,
+} from '../analysisUrlState'
 import {
   getHistoricalSignal,
   getSourceSnapshots,
@@ -13,6 +21,7 @@ import type {
 import { EmptyPanel, ErrorPanel, LoadingPanel } from './feedback'
 import { formatCount, formatRatio, formatReason } from './format'
 import { HistoricalComparison } from './HistoricalComparison'
+import { AnalysisLinkControl } from './AnalysisLinkControl'
 import { SourceTermCombobox } from './SourceTermCombobox'
 
 const SNAPSHOT_LIMIT = 200
@@ -35,10 +44,26 @@ const EMPTY_QUERY: HistoricalSignalQuery = {
   endQuarter: '',
 }
 
+function completedSourceQuarters(data: SourceSnapshotListResponse): string[] {
+  return Array.from(
+    new Set(
+      data.items
+        .filter((snapshot) => snapshot.contains_successfully_loaded_reports)
+        .map((snapshot) => snapshot.source_quarter),
+    ),
+  ).sort()
+}
+
 export function HistoricalTrends() {
+  const [restoredState] = useState(() => parseHistoricalUrlState(window.location.search))
+  const [hasInvalidUrlState] = useState(
+    () => hasHistoricalUrlParameters(window.location.search) && restoredState === null,
+  )
   const [snapshotRetry, setSnapshotRetry] = useState(0)
   const [snapshots, setSnapshots] = useState<SnapshotState>({ status: 'loading' })
-  const [draft, setDraft] = useState<HistoricalSignalQuery>(EMPTY_QUERY)
+  const [draft, setDraft] = useState<HistoricalSignalQuery>(restoredState ?? EMPTY_QUERY)
+  const [restorationChecked, setRestorationChecked] = useState(false)
+  const restorationInitialized = useRef(false)
   const [submitted, setSubmitted] = useState<HistoricalSignalQuery | null>(null)
   const [historicalRetry, setHistoricalRetry] = useState(0)
   const [historical, setHistorical] = useState<HistoricalState>({ status: 'idle' })
@@ -47,24 +72,62 @@ export function HistoricalTrends() {
   useEffect(() => {
     const controller = new AbortController()
     void getSourceSnapshots(SNAPSHOT_LIMIT, controller.signal)
-      .then((data) => setSnapshots({ status: 'ready', data }))
+      .then((data) => {
+        if (!restorationInitialized.current) {
+          const availableQuarters = completedSourceQuarters(data)
+          const restoredQuartersAreAvailable =
+            restoredState !== null &&
+            availableQuarters.includes(restoredState.startQuarter) &&
+            availableQuarters.includes(restoredState.endQuarter)
+          if (!restoredQuartersAreAvailable && availableQuarters.length > 0) {
+            setDraft({
+              ...EMPTY_QUERY,
+              startQuarter: availableQuarters[0] ?? '',
+              endQuarter: availableQuarters.at(-1) ?? '',
+            })
+            if (hasInvalidUrlState || restoredState !== null) {
+              setValidationMessage(
+                'The shared historical configuration was incomplete or did not match available quarters.',
+              )
+            }
+          }
+          restorationInitialized.current = true
+          setRestorationChecked(true)
+        }
+        setSnapshots({ status: 'ready', data })
+      })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         setSnapshots({ status: 'error', error })
       })
     return () => controller.abort()
-  }, [snapshotRetry])
+  }, [hasInvalidUrlState, restoredState, snapshotRetry])
 
   const loadedQuarters = useMemo(() => {
     if (snapshots.status !== 'ready') return []
-    return Array.from(
-      new Set(
-        snapshots.data.items
-          .filter((snapshot) => snapshot.contains_successfully_loaded_reports)
-          .map((snapshot) => snapshot.source_quarter),
-      ),
-    ).sort()
+    return completedSourceQuarters(snapshots.data)
   }, [snapshots])
+
+  const analysisUrl = useMemo(() => {
+    if (!restorationChecked) return null
+    const drugName = draft.drugName.trim()
+    const reactionTerm = draft.reactionTerm.trim()
+    if (
+      !isValidAnalysisTerm(drugName) ||
+      !isValidAnalysisTerm(reactionTerm) ||
+      !loadedQuarters.includes(draft.startQuarter) ||
+      !loadedQuarters.includes(draft.endQuarter) ||
+      loadedQuarters.indexOf(draft.startQuarter) > loadedQuarters.indexOf(draft.endQuarter)
+    ) {
+      return null
+    }
+    return historicalAnalysisUrl({ ...draft, drugName, reactionTerm })
+  }, [draft, loadedQuarters, restorationChecked])
+
+  useEffect(() => {
+    if (!restorationChecked) return
+    replaceBrowserUrl(analysisUrl ?? workspaceUrl('historical'))
+  }, [analysisUrl, restorationChecked])
 
   useEffect(() => {
     if (submitted === null) return
@@ -198,6 +261,8 @@ export function HistoricalTrends() {
           {validationMessage && (
             <p className="validation-message" role="alert">{validationMessage}</p>
           )}
+
+          <AnalysisLinkControl url={analysisUrl} />
 
           {historical.status === 'idle' && (
             <div className="state-panel state-panel--empty historical-initial-state">
