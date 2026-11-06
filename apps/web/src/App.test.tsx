@@ -426,3 +426,20 @@ test('opens the Historical Trends workspace without changing existing navigation
   expect(screen.getByRole('button', { name: 'Signals' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Drugs' })).toBeInTheDocument()
 })
+
+test('opens the bounded Signal Comparison workspace from primary navigation', () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      jsonResponse({ items: [], returned_count: 0, limit: 25, research_notice: researchNotice }),
+    ),
+  )
+
+  render(<App />)
+  fireEvent.click(screen.getByRole('button', { name: 'Signal Comparison' }))
+
+  expect(screen.getByRole('heading', { name: 'Signal Comparison' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Compare signals' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Signals' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Historical Trends' })).toBeInTheDocument()
+})

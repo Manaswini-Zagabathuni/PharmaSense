@@ -144,12 +144,16 @@ the requested source-quarter range. They return explicit selected-quarter and ex
 they do not reconstruct a true historical “as-of” database state. See the
 [historical quarter analytics design](docs/architecture/historical-quarter-analytics.md).
 
-The dashboard opens on Signal Explorer and provides Drug Explorer and Historical Trends
-workspaces. Historical Trends consumes the Phase 5A source inventory and historical signal APIs,
+The dashboard opens on Signal Explorer and provides Drug Explorer, Historical Trends, and Signal
+Comparison workspaces. Signal Comparison requests two to four existing signal details and displays
+their server-derived metrics without a cross-pair score or ranking. Historical Trends consumes the
+Phase 5A source inventory and historical signal APIs,
 shows the exact selected population and archive provenance, and performs no statistical
 calculations in the browser. Its accessible Historical Comparison displays API-supplied PRR, ROR,
 pair counts, and ROR intervals while keeping the complete tabular results. See the
 [Historical Trends frontend design](docs/architecture/historical-trends-frontend.md).
+Signal Comparison architecture and safeguards are documented in the
+[Signal Comparison design](docs/architecture/signal-comparison.md).
 
 Vite uses
 `VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to

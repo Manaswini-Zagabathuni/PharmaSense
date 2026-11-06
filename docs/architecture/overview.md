@@ -33,6 +33,8 @@ Phase 5B adds a typed Historical Trends dashboard workspace over the Phase 5A AP
 statistics, population selection, or provenance rules into the browser.
 Phase 5C adds accessible, dependency-free quarter comparison for API-supplied PRR, ROR, pair
 counts, and ROR intervals while preserving the detailed table and undefined-value diagnostics.
+Phase 6A adds a bounded Signal Comparison workspace that reuses existing signal-detail requests
+and preserves server-derived metrics, diagnostics, and entered ordering.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -101,6 +103,8 @@ The browser interaction, API usage, states, and provenance presentation are desc
 The visualization scale, missing-quarter behavior, accessible representation, and intentional
 non-calculation boundary are specified in
 [the historical visualization design](historical-visualization.md).
+The multi-pair input bound, existing-API data flow, deterministic ordering, and scientific
+comparison safeguards are documented in [the Signal Comparison design](signal-comparison.md).
 
 ## Runtime topology
 

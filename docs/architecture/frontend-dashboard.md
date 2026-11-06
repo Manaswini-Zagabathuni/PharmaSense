@@ -15,6 +15,8 @@ PRR, ROR, confidence-interval calculation, eligibility decision, or ranking in t
   contingency counts, and diagnostic statuses for one observed pair.
 - `src/components/DrugExplorer.tsx` provides bounded drug pagination and co-reported reaction
   profiles.
+- `src/components/SignalComparison.tsx` requests two to four existing signal details and presents
+  their server-derived metrics in deterministic entered order.
 - `src/App.tsx` provides accessible workspace navigation and the persistent research-use notice.
 
 React component state is sufficient for these two workspaces, so Phase 3B adds no router or global
@@ -61,6 +63,14 @@ and threshold diagnostics without recalculation.
 The drug workspace calls `GET /api/v1/drugs` with a fixed bounded page size of 25 and API `offset`
 pagination. Selecting a drug requests its top 25 co-reported reaction terms. Missing drugs, known
 drugs without reaction terms, trailing empty pages, and service failures have distinct states.
+
+### Signal Comparison
+
+The comparison workspace reuses the existing signal-detail endpoint for two to four explicit
+pairs. It adds no batch API or browser statistics. Observed, evaluable, eligible, prioritized,
+undefined, and unobserved states remain distinct. See the
+[Signal Comparison design](signal-comparison.md) for bounds, error semantics, and scientific
+limitations.
 
 ## Accessibility and resilience
 
