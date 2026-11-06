@@ -16,7 +16,7 @@ statistical diagnostics, and reproducible user-selected configurations.
 
 ## Why this project exists
 
-Large adverse-event datasets are difficult to parse, version, explore, and analyze consistently.
+Large adverse event datasets are difficult to parse, version, explore, and analyze consistently.
 Naive joins can inflate counts, follow-up reports can be mistaken for independent cases, and
 statistical ratios can be presented without their underlying evidence or limitations.
 
@@ -32,7 +32,7 @@ PharmaSense provides one traceable workflow:
 
 ## Implemented capabilities
 
-- **Project Overview** — API-independent landing experience explaining the workflow and scientific
+- **Project Overview** - API-independent landing experience explaining the workflow and scientific
   boundary.
 - **Signal Explorer and Signal Detail** — bounded signal prioritization, complete `a/b/c/d`
   contingency counts, PRR, ROR, log-ROR confidence intervals, thresholds, and explicit undefined or
