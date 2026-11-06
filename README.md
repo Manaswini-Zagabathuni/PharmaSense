@@ -34,24 +34,24 @@ PharmaSense provides one traceable workflow:
 
 - **Project Overview** - API-independent landing experience explaining the workflow and scientific
   boundary.
-- **Signal Explorer and Signal Detail** — bounded signal prioritization, complete `a/b/c/d`
+- **Signal Explorer and Signal Detail** - bounded signal prioritization, complete `a/b/c/d`
   contingency counts, PRR, ROR, log-ROR confidence intervals, thresholds, and explicit undefined or
   ineligible states.
-- **Drug Explorer and Drug Reaction Exploration** — resolved report and case counts plus bounded
+- **Drug Explorer and Drug Reaction Exploration** - resolved report and case counts plus bounded
   co-reported reaction profiles.
-- **Historical Trends and Historical Comparison** — per-quarter analysis over completed loaded
+- **Historical Trends and Historical Comparison** - per-quarter analysis over completed loaded
   source ingestions, with population exclusions and archive provenance.
-- **Signal Comparison** — ordered comparison of two to four existing signal details without a
+- **Signal Comparison** - ordered comparison of two to four existing signal details without a
   cross-pair score or ranking.
-- **Source-Term Discovery** — case-insensitive, SQL-bounded suggestions from source values; no
+- **Source-Term Discovery** - case-insensitive, SQL-bounded suggestions from source values; no
   automatic synonym or clinical-concept claims.
-- **Reproducible Analysis Links** — validated, configuration-only URLs for Historical Trends and
+- **Reproducible Analysis Links** - validated, configuration-only URLs for Historical Trends and
   Signal Comparison. Links do not store results or freeze a dataset.
-- **FAERS ingestion foundation** — immutable checksummed archives, streaming parsing, quality
+- **FAERS ingestion foundation** - immutable checksummed archives, streaming parsing, quality
   reports, normalized persistence, rejected-record tracking, and restartable idempotent batches.
-- **Synthetic demo environment** — opt-in deterministic `DEMO` records for exercising the stack;
+- **Synthetic demo environment** - opt-in deterministic `DEMO` records for exercising the stack;
   these are not FDA data or scientific findings.
-- **Operational safeguards** — request IDs, privacy-conscious structured timing, safe metadata,
+- **Operational safeguards** - request IDs, privacy-conscious structured timing, safe metadata,
   sanitized errors, trusted-host validation, security headers, and restricted development
   containers.
 
