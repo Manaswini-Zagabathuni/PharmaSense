@@ -100,6 +100,54 @@ export interface DrugReactionListResponse {
   research_notice: string
 }
 
+export type HistoricalPopulationSelectionRule =
+  'COMPLETED_INGESTIONS_IN_INCLUSIVE_QUARTER_RANGE'
+
+export interface SourceSnapshot {
+  source_quarter: string
+  source_name: string
+  filename: string
+  archive_sha256: string
+  retrieved_at: string
+  known_in_provenance: boolean
+  completed_ingestion_runs: number
+  latest_completed_at: string | null
+  persisted_report_count: number
+  successfully_loaded_report_count: number
+  successfully_loaded_case_count: number
+  contains_successfully_loaded_reports: boolean
+}
+
+export interface SourceSnapshotListResponse {
+  items: SourceSnapshot[]
+  returned_count: number
+  limit: number
+}
+
+export interface HistoricalAnalysisMetadata {
+  selection_rule: HistoricalPopulationSelectionRule
+  requested_start_quarter: string
+  requested_end_quarter: string
+  selected_source_quarters: string[]
+  resolved_report_count: number
+  resolved_case_count: number
+  excluded_invalid_version_case_count: number
+  excluded_version_tie_case_count: number
+}
+
+export interface QuarterSignal {
+  source_quarter: string
+  signal: Signal
+}
+
+export interface HistoricalSignalResponse {
+  metadata: HistoricalAnalysisMetadata
+  items: QuarterSignal[]
+  returned_count: number
+  research_notice: string
+  historical_method_notice: string
+}
+
 export interface ErrorResponse {
   detail: string
 }

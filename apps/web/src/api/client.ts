@@ -2,8 +2,10 @@ import type {
   DrugListResponse,
   DrugReactionListResponse,
   ErrorResponse,
+  HistoricalSignalResponse,
   SignalDetailResponse,
   SignalListResponse,
+  SourceSnapshotListResponse,
 } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
@@ -85,6 +87,37 @@ export function getDrugReactions(
   const params = new URLSearchParams({ limit: String(limit) })
   return request<DrugReactionListResponse>(
     `/drugs/${encodeURIComponent(drugName)}/reactions?${params.toString()}`,
+    signal,
+  )
+}
+
+export function getSourceSnapshots(
+  limit = 100,
+  signal?: AbortSignal,
+): Promise<SourceSnapshotListResponse> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  return request<SourceSnapshotListResponse>(`/source-snapshots?${params.toString()}`, signal)
+}
+
+export interface HistoricalSignalQuery {
+  drugName: string
+  reactionTerm: string
+  startQuarter: string
+  endQuarter: string
+}
+
+export function getHistoricalSignal(
+  query: HistoricalSignalQuery,
+  signal?: AbortSignal,
+): Promise<HistoricalSignalResponse> {
+  const params = new URLSearchParams({
+    start_quarter: query.startQuarter,
+    end_quarter: query.endQuarter,
+  })
+  const drug = encodeURIComponent(query.drugName)
+  const reaction = encodeURIComponent(query.reactionTerm)
+  return request<HistoricalSignalResponse>(
+    `/historical/signals/${drug}/reactions/${reaction}?${params.toString()}`,
     signal,
   )
 }

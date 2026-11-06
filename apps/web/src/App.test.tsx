@@ -403,3 +403,26 @@ test('retries failed drug and reaction requests', async () => {
   expect(drugCalls).toBe(2)
   expect(reactionCalls).toBe(2)
 })
+
+test('opens the Historical Trends workspace without changing existing navigation', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = requestUrl(input)
+      if (url.includes('/source-snapshots?')) {
+        return Promise.resolve(jsonResponse({ items: [], returned_count: 0, limit: 200 }))
+      }
+      return Promise.resolve(
+        jsonResponse({ items: [], returned_count: 0, limit: 25, research_notice: researchNotice }),
+      )
+    }),
+  )
+
+  render(<App />)
+  fireEvent.click(screen.getByRole('button', { name: 'Historical Trends' }))
+
+  expect(screen.getByRole('heading', { name: 'Historical Trends' })).toBeInTheDocument()
+  expect(await screen.findByText('No completed source quarters are available')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Signals' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Drugs' })).toBeInTheDocument()
+})

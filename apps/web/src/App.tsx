@@ -1,9 +1,10 @@
 import { useState } from 'react'
 
 import { DrugExplorer } from './components/DrugExplorer'
+import { HistoricalTrends } from './components/HistoricalTrends'
 import { SignalExplorer } from './components/SignalExplorer'
 
-type Workspace = 'signals' | 'drugs'
+type Workspace = 'signals' | 'drugs' | 'historical'
 
 export function App() {
   const [workspace, setWorkspace] = useState<Workspace>('signals')
@@ -18,6 +19,7 @@ export function App() {
         <nav className="primary-nav" aria-label="Analytics workspaces">
           <button type="button" aria-current={workspace === 'signals' ? 'page' : undefined} onClick={() => setWorkspace('signals')}>Signals</button>
           <button type="button" aria-current={workspace === 'drugs' ? 'page' : undefined} onClick={() => setWorkspace('drugs')}>Drugs</button>
+          <button type="button" aria-current={workspace === 'historical' ? 'page' : undefined} onClick={() => setWorkspace('historical')}>Historical Trends</button>
         </nav>
         <span className="read-only-badge">Read-only research</span>
       </header>
@@ -28,7 +30,9 @@ export function App() {
       </aside>
 
       <main id="main-content">
-        {workspace === 'signals' ? <SignalExplorer /> : <DrugExplorer />}
+        {workspace === 'signals' && <SignalExplorer />}
+        {workspace === 'drugs' && <DrugExplorer />}
+        {workspace === 'historical' && <HistoricalTrends />}
       </main>
 
       <footer>

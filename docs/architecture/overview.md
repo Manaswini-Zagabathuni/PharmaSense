@@ -29,6 +29,8 @@ Phase 4C adds fixed API response hardening, configurable trusted-host enforcemen
 configuration validation, and incremental container lifecycle restrictions.
 Phase 5A adds provenance-backed source snapshot inventory and explicit completed-quarter signal
 series while reusing Phase 2A version resolution and all existing statistical calculations.
+Phase 5B adds a typed Historical Trends dashboard workspace over the Phase 5A API without moving
+statistics, population selection, or provenance rules into the browser.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -92,6 +94,8 @@ Security boundaries, HTTP headers, trusted-host rules, and deployment limitation
 in [the security and deployment design](security-deployment.md).
 Loaded-quarter selection, reproducibility metadata, duplicate handling, and historical caveats are
 described in [the historical source-quarter analytics design](historical-quarter-analytics.md).
+The browser interaction, API usage, states, and provenance presentation are described in
+[the Historical Trends frontend design](historical-trends-frontend.md).
 
 ## Runtime topology
 

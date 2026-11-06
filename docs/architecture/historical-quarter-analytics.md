@@ -90,5 +90,6 @@ confounding, terminology changes, and source processing can change measurements 
 Small or zero contingency cells can make PRR, ROR, or confidence intervals undefined. The API
 preserves those explicit diagnostics and applies no hidden continuity correction.
 
-Frontend work is intentionally deferred in Phase 5A. The reusable query, service, typed API, and
-scientific contract are established first; the existing dashboard remains unchanged.
+Phase 5B presents this contract in a typed, read-only
+[Historical Trends workspace](historical-trends-frontend.md). Statistical calculations and
+population selection remain server-side.
