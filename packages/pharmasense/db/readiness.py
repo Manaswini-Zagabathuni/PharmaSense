@@ -1,15 +1,16 @@
 """Database connectivity checks used by API readiness."""
 
+import logging
 from dataclasses import dataclass
-from logging import getLogger
 
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from pharmasense.config.settings import Settings
 from pharmasense.db.engine import build_engine
+from pharmasense.telemetry import structured_log
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -40,5 +41,5 @@ class DatabaseReadinessService:
                 connection.execute(text("SELECT 1"))
             return DatabaseCheck(True, "Database connection succeeded.")
         except SQLAlchemyError:
-            logger.exception("Database readiness check failed")
+            structured_log(logger, "database_readiness_failed", level=logging.ERROR)
             return DatabaseCheck(False, "Database connection failed.")

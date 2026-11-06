@@ -7,6 +7,8 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
+from pharmasense import __version__
+
 
 class Settings(BaseSettings):
     """Configuration loaded from environment variables and an ignored .env file."""
@@ -19,6 +21,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "PharmaSense"
+    app_version: str = __version__
     app_environment: Literal["development", "test", "production"] = "development"
     app_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     app_host: str = "127.0.0.1"

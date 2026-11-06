@@ -23,6 +23,8 @@ Phase 3B adds a responsive React dashboard that consumes those routes through a 
 does not reproduce analytics calculations in browser code.
 Phase 4A documents and verifies the local Vite -> FastAPI -> MySQL runtime path and adds a
 transactional, idempotent, explicitly synthetic demonstration seed outside production ingestion.
+Phase 4B adds privacy-conscious request correlation, safe operational timing, and a minimal typed
+metadata endpoint without changing analytics or persistence semantics.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -80,6 +82,8 @@ The browser client, workspaces, configuration, and accessibility boundaries are 
 [the read-only analytics dashboard design](frontend-dashboard.md).
 The Compose topology, synthetic demonstration boundary, and guarded live verification are
 described in [the local full-stack runbook](local-full-stack.md).
+Request IDs, JSON event fields, operation timers, metadata, and privacy exclusions are specified
+in [the API observability design](observability.md).
 
 ## Runtime topology
 

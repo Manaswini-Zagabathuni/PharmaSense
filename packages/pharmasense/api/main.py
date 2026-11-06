@@ -1,25 +1,32 @@
 """FastAPI application factory and executable entry point."""
 
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+import logging
 
-from pharmasense import __version__
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse, PlainTextResponse
+
 from pharmasense.api.errors import AnalyticsExecutionError, AnalyticsUnavailableError
+from pharmasense.api.observability import REQUEST_ID_HEADER, observe_request, safe_request_path
 from pharmasense.api.routes.analytics import router as analytics_router
 from pharmasense.api.routes.system import router as system_router
 from pharmasense.config.settings import get_settings
+from pharmasense.telemetry import configure_application_logging, structured_log
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
     """Create the PharmaSense API without connecting to external services."""
     settings = get_settings()
+    configure_application_logging(settings.app_log_level)
     application = FastAPI(
         title=settings.app_name,
-        version=__version__,
+        version=settings.app_version,
         description="Research API for potential drug safety reporting signals.",
         docs_url="/docs" if settings.app_environment != "production" else None,
         redoc_url=None,
     )
+    application.middleware("http")(observe_request)
     application.include_router(system_router, prefix="/api/v1", tags=["system"])
     application.include_router(analytics_router, prefix="/api/v1", tags=["analytics"])
 
@@ -37,6 +44,24 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Analytics request could not be completed."},
+        )
+
+    @application.exception_handler(Exception)
+    async def unexpected_failure(request: Request, _error: Exception) -> PlainTextResponse:
+        request_id = getattr(request.state, "request_id", None)
+        structured_log(
+            logger,
+            "unhandled_request_exception",
+            level=logging.ERROR,
+            request_id=request_id,
+            method=request.method,
+            path=safe_request_path(request),
+        )
+        headers = {REQUEST_ID_HEADER: request_id} if isinstance(request_id, str) else None
+        return PlainTextResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content="Internal Server Error",
+            headers=headers,
         )
 
     return application

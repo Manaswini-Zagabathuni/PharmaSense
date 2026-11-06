@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, Response, status
 
 from pharmasense import __version__
 from pharmasense.api.dependencies import get_database_readiness_service
-from pharmasense.api.schemas.system import HealthResponse, ReadinessResponse, ServiceCheck
+from pharmasense.api.schemas.system import (
+    HealthResponse,
+    InfoResponse,
+    ReadinessResponse,
+    ServiceCheck,
+)
+from pharmasense.config.settings import Settings, get_settings
 from pharmasense.db.readiness import DatabaseReadinessService
 
 router = APIRouter()
@@ -16,6 +22,17 @@ router = APIRouter()
 def health() -> HealthResponse:
     """Report process liveness without requiring downstream services."""
     return HealthResponse(status="ok", service="pharmasense-api", version=__version__)
+
+
+@router.get("/info", response_model=InfoResponse)
+def info(settings: Annotated[Settings, Depends(get_settings)]) -> InfoResponse:
+    """Return safe application metadata without infrastructure configuration."""
+
+    return InfoResponse(
+        application_name=settings.app_name,
+        environment=settings.app_environment,
+        version=settings.app_version,
+    )
 
 
 @router.get(

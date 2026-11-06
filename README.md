@@ -20,9 +20,11 @@ checksum-gated database ingestion and reconciliation. Phase 2 adds read-only lat
 drug-reaction, disproportionality, confidence, and prioritization analytics. Phase 3A exposes
 those analytics through a bounded, read-only API, and Phase 3B provides a responsive React
 research dashboard over that API. Phase 4A adds an opt-in synthetic demonstration population and
-a guarded live frontend-to-MySQL verification workflow. See
+a guarded live frontend-to-MySQL verification workflow. Phase 4B adds request correlation,
+privacy-conscious operation timing, and safe application metadata. See
 [the architecture](docs/architecture/overview.md),
 [the local full-stack runbook](docs/architecture/local-full-stack.md),
+[the observability design](docs/architecture/observability.md),
 [analytics API](docs/architecture/analytics-api.md),
 [frontend dashboard](docs/architecture/frontend-dashboard.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
@@ -113,10 +115,15 @@ The liveness endpoint confirms the process can serve requests. The readiness end
 `SELECT 1` against MySQL and returns HTTP 503 if configuration or connectivity is unavailable.
 Interactive development documentation at `/docs` includes the Phase 3A endpoints:
 
+- `GET /api/v1/info`
 - `GET /api/v1/signals`
 - `GET /api/v1/signals/{drug_name}/reactions/{reaction_term}`
 - `GET /api/v1/drugs`
 - `GET /api/v1/drugs/{drug_name}/reactions`
+
+API responses include `X-Request-ID`. Request and analytics completion events are emitted as
+privacy-conscious JSON logs containing stable operation fields and durations, never request
+bodies, query strings, credentials, database URLs, or raw FAERS records.
 
 All analytics are research-only reporting patterns. They do not establish causality or incidence
 and must not be used for clinical decision-making.

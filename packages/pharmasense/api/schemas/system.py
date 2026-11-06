@@ -15,6 +15,16 @@ class HealthResponse(BaseModel):
     version: str
 
 
+class InfoResponse(BaseModel):
+    """Safe, public application metadata."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    application_name: str
+    environment: Literal["development", "test", "production"]
+    version: str
+
+
 class ServiceCheck(BaseModel):
     """Status of one required dependency."""
 
