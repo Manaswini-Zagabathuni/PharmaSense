@@ -6,6 +6,7 @@ import type {
   Signal,
   SourceSnapshotListResponse,
 } from '../api/types'
+import { HistoricalComparison } from './HistoricalComparison'
 import { HistoricalTrends } from './HistoricalTrends'
 
 const snapshots: SourceSnapshotListResponse = {
@@ -177,6 +178,20 @@ test('renders API-provided quarter results, diagnostics, and source provenance',
   fillHistoricalForm()
 
   const resultHeading = await screen.findByRole('heading', { name: '2 loaded quarters' })
+  const comparison = screen.getByRole('region', { name: 'Historical Comparison' })
+  expect(within(comparison).getByRole('radio', { name: 'ROR' })).toBeChecked()
+  expect(within(comparison).getByRole('list', { name: 'ROR by source quarter' })).toBeInTheDocument()
+  expect(within(comparison).getByText('2.667')).toBeInTheDocument()
+  expect(within(comparison).getByText('0.0')).toBeInTheDocument()
+  fireEvent.click(within(comparison).getByRole('radio', { name: 'ROR confidence interval' }))
+  expect(within(comparison).getByText('1.2–5.9')).toBeInTheDocument()
+  expect(within(comparison).getByText('Zero Cell Confidence Interval')).toBeInTheDocument()
+  fireEvent.click(within(comparison).getByRole('radio', { name: 'Pair reports' }))
+  expect(within(comparison).getByText('20')).toBeInTheDocument()
+  expect(within(comparison).getByText('0')).toBeInTheDocument()
+  fireEvent.click(within(comparison).getByRole('radio', { name: 'PRR' }))
+  expect(within(comparison).getByText('2.0')).toBeInTheDocument()
+  expect(within(comparison).getByText('0.0')).toBeInTheDocument()
   const results = resultHeading.closest('.results-card')
   expect(results).not.toBeNull()
   expect(within(results as HTMLElement).getByText('2.667')).toBeInTheDocument()
@@ -193,6 +208,51 @@ test('renders API-provided quarter results, diagnostics, and source provenance',
   expect(fetchMock.mock.calls[1]?.[0]).toContain(
     '/historical/signals/Drug%20A/reactions/Event%20B?start_quarter=2023Q1&end_quarter=2023Q2',
   )
+})
+
+test('orders requested quarters and distinguishes missing, undefined, and zero API values', () => {
+  const response: HistoricalSignalResponse = {
+    ...historicalResponse,
+    metadata: {
+      ...historicalResponse.metadata,
+      requested_start_quarter: '2023Q1',
+      requested_end_quarter: '2023Q3',
+      selected_source_quarters: ['2023Q1', '2023Q3'],
+    },
+    items: [
+      {
+        source_quarter: '2023Q3',
+        signal: {
+          ...baseSignal,
+          ror: { value: null, undefined_reason: 'ZERO_NON_DRUG_REACTION_COUNT' },
+          statistically_evaluable: false,
+          eligible_for_prioritization: false,
+          is_prioritized: false,
+          ineligibility_reasons: ['ROR_UNDEFINED'],
+          priority_exclusion_reason: 'NOT_ELIGIBLE',
+        },
+      },
+      { source_quarter: '2023Q1', signal: baseSignal },
+    ],
+    returned_count: 2,
+  }
+
+  render(<HistoricalComparison response={response} />)
+
+  const comparison = screen.getByRole('region', { name: 'Historical Comparison' })
+  const rows = within(comparison).getAllByRole('listitem')
+  expect(rows).toHaveLength(3)
+  expect(rows[0]).toHaveTextContent('2023Q1')
+  expect(rows[1]).toHaveTextContent('2023Q2')
+  expect(rows[1]).toHaveTextContent('No loaded result')
+  expect(rows[2]).toHaveTextContent('2023Q3')
+  expect(rows[2]).toHaveTextContent('Not defined')
+  expect(rows[2]).toHaveTextContent('Zero Non Drug Reaction Count')
+  expect(within(rows[2] as HTMLElement).queryByText(/^0(?:\.0+)?$/)).not.toBeInTheDocument()
+
+  fireEvent.click(within(comparison).getByRole('radio', { name: 'Pair reports' }))
+  expect(within(comparison).getByRole('list', { name: 'Pair reports by source quarter' })).toBeInTheDocument()
+  expect(rows[1]).toHaveTextContent('No loaded result')
 })
 
 test('shows validation and a historical loading state without fabricating results', async () => {

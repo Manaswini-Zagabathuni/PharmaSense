@@ -147,7 +147,8 @@ they do not reconstruct a true historical “as-of” database state. See the
 The dashboard opens on Signal Explorer and provides Drug Explorer and Historical Trends
 workspaces. Historical Trends consumes the Phase 5A source inventory and historical signal APIs,
 shows the exact selected population and archive provenance, and performs no statistical
-calculations in the browser. See the
+calculations in the browser. Its accessible Historical Comparison displays API-supplied PRR, ROR,
+pair counts, and ROR intervals while keeping the complete tabular results. See the
 [Historical Trends frontend design](docs/architecture/historical-trends-frontend.md).
 
 Vite uses

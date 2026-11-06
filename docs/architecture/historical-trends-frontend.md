@@ -55,3 +55,7 @@ incidence, clinical risk, comparative safety, or treatment recommendations. Quar
 can be affected by reporting behavior, follow-ups, duplicates, underreporting, confounding, and
 terminology changes. Filtering records currently loaded from selected source quarters is not a
 true historical as-of reconstruction.
+
+Phase 5C adds a dependency-free, accessible metric comparison above the detailed table. Its
+presentation-only coordinate scaling, missing-value rules, and non-calculation boundary are
+documented in [historical visualization and comparison](historical-visualization.md).

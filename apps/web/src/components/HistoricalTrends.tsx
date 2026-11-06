@@ -12,6 +12,7 @@ import type {
 } from '../api/types'
 import { EmptyPanel, ErrorPanel, LoadingPanel } from './feedback'
 import { formatCount, formatRatio, formatReason } from './format'
+import { HistoricalComparison } from './HistoricalComparison'
 
 const SNAPSHOT_LIMIT = 200
 
@@ -254,34 +255,37 @@ export function HistoricalTrends() {
 
 function HistoricalResults({ response }: { response: HistoricalSignalResponse }) {
   return (
-    <div className="results-card">
-      <div className="results-card__header">
-        <div>
-          <p className="eyebrow">Quarter measurements</p>
-          <h2>{formatCount(response.returned_count)} loaded quarters</h2>
+    <div className="historical-results">
+      <HistoricalComparison response={response} />
+      <div className="results-card">
+        <div className="results-card__header">
+          <div>
+            <p className="eyebrow">Quarter measurements</p>
+            <h2>{formatCount(response.returned_count)} loaded quarters</h2>
+          </div>
+          <p className="results-meta">Detailed API values</p>
         </div>
-        <p className="results-meta">Statistics supplied by the API</p>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Quarter</th>
+                <th scope="col">Population</th>
+                <th scope="col">Pair reports</th>
+                <th scope="col">PRR</th>
+                <th scope="col">ROR</th>
+                <th scope="col">ROR confidence interval</th>
+                <th scope="col">Status</th>
+                <th scope="col">Diagnostics</th>
+              </tr>
+            </thead>
+            <tbody>
+              {response.items.map((item) => <HistoricalRow item={item} key={item.source_quarter} />)}
+            </tbody>
+          </table>
+        </div>
+        <p className="inline-notice">{response.research_notice}</p>
       </div>
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Quarter</th>
-              <th scope="col">Population</th>
-              <th scope="col">Pair reports</th>
-              <th scope="col">PRR</th>
-              <th scope="col">ROR</th>
-              <th scope="col">ROR confidence interval</th>
-              <th scope="col">Status</th>
-              <th scope="col">Diagnostics</th>
-            </tr>
-          </thead>
-          <tbody>
-            {response.items.map((item) => <HistoricalRow item={item} key={item.source_quarter} />)}
-          </tbody>
-        </table>
-      </div>
-      <p className="inline-notice">{response.research_notice}</p>
     </div>
   )
 }

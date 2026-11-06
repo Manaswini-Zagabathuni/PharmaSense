@@ -31,6 +31,8 @@ Phase 5A adds provenance-backed source snapshot inventory and explicit completed
 series while reusing Phase 2A version resolution and all existing statistical calculations.
 Phase 5B adds a typed Historical Trends dashboard workspace over the Phase 5A API without moving
 statistics, population selection, or provenance rules into the browser.
+Phase 5C adds accessible, dependency-free quarter comparison for API-supplied PRR, ROR, pair
+counts, and ROR intervals while preserving the detailed table and undefined-value diagnostics.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -96,6 +98,9 @@ Loaded-quarter selection, reproducibility metadata, duplicate handling, and hist
 described in [the historical source-quarter analytics design](historical-quarter-analytics.md).
 The browser interaction, API usage, states, and provenance presentation are described in
 [the Historical Trends frontend design](historical-trends-frontend.md).
+The visualization scale, missing-quarter behavior, accessible representation, and intentional
+non-calculation boundary are specified in
+[the historical visualization design](historical-visualization.md).
 
 ## Runtime topology
 
