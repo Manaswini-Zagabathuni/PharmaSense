@@ -96,3 +96,16 @@ No SQLAlchemy models, provenance internals, database URLs, or credentials are se
 
 The existing `/api/v1/health` liveness and `/api/v1/ready` database-readiness behavior is
 unchanged.
+
+## Phase 5A historical endpoints
+
+`GET /api/v1/source-snapshots` returns a bounded provenance inventory. It distinguishes an archive
+known in `source_artifact`, checkpointed reports from any run, and reports from completed runs.
+Storage paths and source URLs are not returned.
+
+`GET /api/v1/historical/signals/{drug_name}/reactions/{reaction_term}` requires inclusive
+`start_quarter` and `end_quarter` values in `YYYYQn` form. The range is bounded to 80 quarters.
+The response records the exact loaded quarters selected, the population rule, resolved counts,
+Phase 2A exclusions, and independent per-quarter signal results. Empty loaded ranges return HTTP
+200 with an empty series. See [historical quarter analytics](historical-quarter-analytics.md) for
+the population contract and why this is not a historical as-of reconstruction.

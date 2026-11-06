@@ -6,14 +6,19 @@ from sqlalchemy import func, select
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.selectable import CTE
 
-from pharmasense.analytics.faers_versions import latest_report_versions_statement
+from pharmasense.analytics.faers_versions import (
+    ReportPopulationFilter,
+    latest_report_versions_statement,
+)
 from pharmasense.db.models import FaersDrug, FaersReaction
 
 
-def resolved_latest_report_keys_cte() -> CTE:
+def resolved_latest_report_keys_cte(population: ReportPopulationFilter | None = None) -> CTE:
     """Return the Phase 2A population at its report-and-case key grain."""
 
-    latest = latest_report_versions_statement().subquery("resolved_latest_report_versions")
+    latest = latest_report_versions_statement(population).subquery(
+        "resolved_latest_report_versions"
+    )
     return select(latest.c.primary_id, latest.c.case_id).cte("resolved_latest_report_keys")
 
 

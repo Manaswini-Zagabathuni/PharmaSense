@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
 
-from sqlalchemy import BigInteger, case, cast, func, select
+from sqlalchemy import BigInteger, case, cast, false, func, select, tuple_
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.selectable import CTE
 
-from pharmasense.db.models import FaersReportVersion
+from pharmasense.db.models import FaersReportVersion, IngestionRun
 
 _NUMERIC_VERSION_PATTERN = r"^[0-9]+$"
 
@@ -21,7 +22,24 @@ class ReportVersionResolutionStatus(StrEnum):
     VERSION_TIE = "VERSION_TIE"
 
 
-def _classified_report_versions() -> CTE:
+@dataclass(frozen=True)
+class ReportPopulationFilter:
+    """Optional eligibility boundary applied before Phase 2A version resolution."""
+
+    source_quarters: tuple[tuple[int, int], ...]
+    completed_ingestions_only: bool = False
+
+    def __post_init__(self) -> None:
+        normalized = tuple(sorted(set(self.source_quarters)))
+        for year, quarter in normalized:
+            if type(year) is not int or year < 1900 or year > 9999:
+                raise ValueError("source year must be an integer between 1900 and 9999")
+            if type(quarter) is not int or quarter not in (1, 2, 3, 4):
+                raise ValueError("source quarter must be an integer between 1 and 4")
+        object.__setattr__(self, "source_quarters", normalized)
+
+
+def _classified_report_versions(population: ReportPopulationFilter | None = None) -> CTE:
     """Build classified immutable versions as private composable CTEs."""
 
     numeric_version = case(
@@ -31,11 +49,26 @@ def _classified_report_versions() -> CTE:
         ),
         else_=None,
     ).label("numeric_version")
-    parsed = select(
+    parsed_statement = select(
         FaersReportVersion.primary_id,
         FaersReportVersion.case_id,
         numeric_version,
-    ).cte("faers_parsed_report_versions")
+    )
+    if population is not None:
+        if population.completed_ingestions_only:
+            parsed_statement = parsed_statement.join(
+                IngestionRun, IngestionRun.id == FaersReportVersion.ingestion_run_id
+            ).where(IngestionRun.status == "COMPLETED")
+        if population.source_quarters:
+            parsed_statement = parsed_statement.where(
+                tuple_(
+                    FaersReportVersion.source_year,
+                    FaersReportVersion.source_quarter,
+                ).in_(population.source_quarters)
+            )
+        else:
+            parsed_statement = parsed_statement.where(false())
+    parsed = parsed_statement.cte("faers_parsed_report_versions")
     with_maximum = select(
         parsed.c.primary_id,
         parsed.c.case_id,
@@ -63,14 +96,16 @@ def _classified_report_versions() -> CTE:
     ).cte("faers_classified_report_versions")
 
 
-def latest_report_versions_statement() -> Select[tuple[FaersReportVersion]]:
+def latest_report_versions_statement(
+    population: ReportPopulationFilter | None = None,
+) -> Select[tuple[FaersReportVersion]]:
     """Select one unambiguous maximum numeric CASEVERSION per longitudinal case.
 
     The statement is read-only and deliberately excludes cases whose versions are all invalid or
     whose maximum numeric value is shared by multiple immutable reports.
     """
 
-    classified = _classified_report_versions()
+    classified = _classified_report_versions(population)
     return (
         select(FaersReportVersion)
         .join(classified, classified.c.primary_id == FaersReportVersion.primary_id)
@@ -81,10 +116,12 @@ def latest_report_versions_statement() -> Select[tuple[FaersReportVersion]]:
     )
 
 
-def report_version_resolution_statement() -> Select[tuple[str, str, int | None, int]]:
+def report_version_resolution_statement(
+    population: ReportPopulationFilter | None = None,
+) -> Select[tuple[str, str, int | None, int]]:
     """Select one diagnostic resolution row for every longitudinal FAERS case."""
 
-    classified = _classified_report_versions()
+    classified = _classified_report_versions(population)
     resolution_status = case(
         (
             classified.c.maximum_numeric_version.is_(None),

@@ -16,6 +16,7 @@ from pharmasense.analytics.drug_reactions import (
     reaction_report_presence_cte,
     resolved_latest_report_keys_cte,
 )
+from pharmasense.analytics.faers_versions import ReportPopulationFilter
 
 
 class UndefinedMetricReason(StrEnum):
@@ -142,11 +143,13 @@ def calculate_disproportionality(table: ContingencyTable) -> DisproportionalityM
 
 
 def drug_reaction_contingency_statement(
-    drug_name: str, reaction_term: str
+    drug_name: str,
+    reaction_term: str,
+    population: ReportPopulationFilter | None = None,
 ) -> Select[tuple[str, str, int, int, int, int, int]]:
     """Aggregate one pair's report-level 2x2 table over the resolved population."""
 
-    latest = resolved_latest_report_keys_cte()
+    latest = resolved_latest_report_keys_cte(population)
     drugs = drug_report_presence_cte(latest)
     reactions = reaction_report_presence_cte(latest)
     selected_drugs = (

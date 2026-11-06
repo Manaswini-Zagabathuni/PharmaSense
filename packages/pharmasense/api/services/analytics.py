@@ -17,6 +17,18 @@ from pharmasense.analytics.drug_reactions import (
     most_reported_reactions_for_drug_statement,
     resolved_latest_report_keys_cte,
 )
+from pharmasense.analytics.historical import (
+    HistoricalAnalysisMetadata,
+    HistoricalPopulationSelectionRule,
+    HistoricalSignalResult,
+    QuarterSignalResult,
+    SourceQuarter,
+    SourceSnapshotRecord,
+    historical_population_filter,
+    historical_resolution_summary_statement,
+    source_snapshot_inventory_statement,
+    successfully_loaded_quarters_statement,
+)
 from pharmasense.analytics.prioritization import (
     SignalResult,
     SignalThresholds,
@@ -167,6 +179,107 @@ class AnalyticsService:
                     .limit(1)
                 )
                 return [] if connection.scalar(exists_statement) else None
+
+    def list_source_snapshots(self, *, limit: int) -> list[SourceSnapshotRecord]:
+        """Return bounded archive-level provenance without exposing storage details."""
+
+        with (
+            timed_operation(logger, "source_snapshot_inventory_retrieval"),
+            self._connect() as connection,
+        ):
+            rows = connection.execute(source_snapshot_inventory_statement().limit(limit)).mappings()
+            return [
+                SourceSnapshotRecord(
+                    source_quarter=SourceQuarter(
+                        int(row["source_year"]), int(row["source_quarter"])
+                    ),
+                    source_name=str(row["source_name"]),
+                    filename=str(row["filename"]),
+                    archive_sha256=str(row["archive_sha256"]),
+                    retrieved_at=row["retrieved_at"],
+                    completed_ingestion_runs=int(row["completed_ingestion_runs"]),
+                    latest_completed_at=row["latest_completed_at"],
+                    persisted_report_count=int(row["persisted_report_count"]),
+                    successfully_loaded_report_count=int(row["successfully_loaded_report_count"]),
+                    successfully_loaded_case_count=int(row["successfully_loaded_case_count"]),
+                )
+                for row in rows
+            ]
+
+    def get_historical_signal(
+        self,
+        drug_name: str,
+        reaction_term: str,
+        *,
+        start_quarter: SourceQuarter,
+        end_quarter: SourceQuarter,
+    ) -> HistoricalSignalResult:
+        """Evaluate one pair independently for each completed, loaded source quarter."""
+
+        if start_quarter > end_quarter:
+            raise ValueError("start quarter must not follow end quarter")
+        with (
+            timed_operation(logger, "historical_signal_retrieval"),
+            self._connect() as connection,
+        ):
+            selected_quarters = tuple(
+                SourceQuarter(int(row.source_year), int(row.source_quarter))
+                for row in connection.execute(
+                    successfully_loaded_quarters_statement(start_quarter, end_quarter)
+                )
+            )
+            summary: RowMapping | dict[str, int]
+            if selected_quarters:
+                summary = (
+                    connection.execute(historical_resolution_summary_statement(selected_quarters))
+                    .mappings()
+                    .one()
+                )
+            else:
+                summary = {
+                    "resolved_report_count": 0,
+                    "resolved_case_count": 0,
+                    "excluded_invalid_version_case_count": 0,
+                    "excluded_version_tie_case_count": 0,
+                }
+
+            quarter_results: list[QuarterSignalResult] = []
+            for quarter in selected_quarters:
+                row = (
+                    connection.execute(
+                        drug_reaction_contingency_statement(
+                            drug_name,
+                            reaction_term,
+                            historical_population_filter((quarter,)),
+                        )
+                    )
+                    .mappings()
+                    .one()
+                )
+                quarter_results.append(
+                    QuarterSignalResult(
+                        source_quarter=quarter,
+                        signal=evaluate_signal(
+                            drug_name,
+                            reaction_term,
+                            _contingency_from_row(row),
+                        ),
+                    )
+                )
+
+        metadata = HistoricalAnalysisMetadata(
+            selection_rule=(
+                HistoricalPopulationSelectionRule.COMPLETED_INGESTIONS_IN_INCLUSIVE_QUARTER_RANGE
+            ),
+            requested_start_quarter=start_quarter,
+            requested_end_quarter=end_quarter,
+            selected_source_quarters=selected_quarters,
+            resolved_report_count=int(summary["resolved_report_count"]),
+            resolved_case_count=int(summary["resolved_case_count"]),
+            excluded_invalid_version_case_count=int(summary["excluded_invalid_version_case_count"]),
+            excluded_version_tie_case_count=int(summary["excluded_version_tie_case_count"]),
+        )
+        return HistoricalSignalResult(metadata=metadata, quarters=tuple(quarter_results))
 
 
 def _contingency_from_row(row: RowMapping) -> ContingencyTable:

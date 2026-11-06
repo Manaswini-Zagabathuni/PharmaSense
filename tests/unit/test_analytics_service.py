@@ -8,12 +8,14 @@ import pytest
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
+from pharmasense.analytics.historical import SourceQuarter
 from pharmasense.analytics.prioritization import SignalThresholds
 from pharmasense.api.errors import AnalyticsUnavailableError
 from pharmasense.api.services.analytics import AnalyticsService
 from pharmasense.config.settings import Settings
 from pharmasense.db.base import Base
 from pharmasense.db.models import FaersDrug, FaersReaction, FaersReportVersion
+from tests.unit.analytics.test_historical import seed_historical_population
 from tests.unit.analytics.test_signals import seed_signal_population
 
 
@@ -100,3 +102,45 @@ def test_failed_analytics_operation_logs_only_stable_timing_fields(
     assert event["operation"] == "drug_list_retrieval"
     assert event["outcome"] == "error"
     assert set(event) == {"event", "operation", "outcome", "duration_ms"}
+
+
+def test_service_returns_reproducible_historical_metadata_and_quarter_signals() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        seed_historical_population(session)
+
+    service = AnalyticsService(Settings(_env_file=None), engine=engine)
+    snapshots = service.list_source_snapshots(limit=10)
+    result = service.get_historical_signal(
+        "TARGET",
+        "EVENT",
+        start_quarter=SourceQuarter(2023, 1),
+        end_quarter=SourceQuarter(2023, 3),
+    )
+    empty = service.get_historical_signal(
+        "TARGET",
+        "EVENT",
+        start_quarter=SourceQuarter(2024, 1),
+        end_quarter=SourceQuarter(2024, 2),
+    )
+    engine.dispose()
+
+    assert [snapshot.source_quarter.identifier for snapshot in snapshots] == [
+        "2023Q1",
+        "2023Q2",
+        "2023Q3",
+    ]
+    assert snapshots[2].persisted_report_count == 1
+    assert snapshots[2].contains_successfully_loaded_reports is False
+    assert result.metadata.selected_source_quarters == (
+        SourceQuarter(2023, 1),
+        SourceQuarter(2023, 2),
+    )
+    assert result.metadata.resolved_report_count == 2
+    assert result.metadata.excluded_invalid_version_case_count == 1
+    assert result.metadata.excluded_version_tie_case_count == 1
+    assert [item.signal.analysis_population for item in result.quarters] == [2, 2]
+    assert empty.metadata.selected_source_quarters == ()
+    assert empty.metadata.resolved_report_count == 0
+    assert empty.quarters == ()

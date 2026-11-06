@@ -1,7 +1,10 @@
 """Validated public schemas for read-only FAERS analytics endpoints."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 
+from pharmasense.analytics.historical import HistoricalPopulationSelectionRule
 from pharmasense.analytics.prioritization import (
     PriorityExclusionReason,
     SignalEligibilityReason,
@@ -119,3 +122,58 @@ class ErrorResponse(AnalyticsSchema):
     """Sanitized API error body."""
 
     detail: str
+
+
+class SourceSnapshotResponse(AnalyticsSchema):
+    """Safe archive provenance and completed-ingestion state."""
+
+    source_quarter: str
+    source_name: str
+    filename: str
+    archive_sha256: str
+    retrieved_at: datetime
+    known_in_provenance: bool
+    completed_ingestion_runs: int
+    latest_completed_at: datetime | None
+    persisted_report_count: int
+    successfully_loaded_report_count: int
+    successfully_loaded_case_count: int
+    contains_successfully_loaded_reports: bool
+
+
+class SourceSnapshotListResponse(AnalyticsSchema):
+    """Bounded deterministic inventory of immutable source archives."""
+
+    items: list[SourceSnapshotResponse]
+    returned_count: int
+    limit: int
+
+
+class HistoricalAnalysisMetadataResponse(AnalyticsSchema):
+    """Reproducible loaded-source population definition and exclusions."""
+
+    selection_rule: HistoricalPopulationSelectionRule
+    requested_start_quarter: str
+    requested_end_quarter: str
+    selected_source_quarters: tuple[str, ...]
+    resolved_report_count: int
+    resolved_case_count: int
+    excluded_invalid_version_case_count: int
+    excluded_version_tie_case_count: int
+
+
+class QuarterSignalResponse(AnalyticsSchema):
+    """One signal result independently resolved within one source quarter."""
+
+    source_quarter: str
+    signal: SignalResponse
+
+
+class HistoricalSignalResponse(AnalyticsSchema):
+    """Quarter signal series with an explicit reproducible population boundary."""
+
+    metadata: HistoricalAnalysisMetadataResponse
+    items: list[QuarterSignalResponse]
+    returned_count: int
+    research_notice: str
+    historical_method_notice: str

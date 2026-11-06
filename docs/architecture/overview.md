@@ -27,6 +27,8 @@ Phase 4B adds privacy-conscious request correlation, safe operational timing, an
 metadata endpoint without changing analytics or persistence semantics.
 Phase 4C adds fixed API response hardening, configurable trusted-host enforcement, production
 configuration validation, and incremental container lifecycle restrictions.
+Phase 5A adds provenance-backed source snapshot inventory and explicit completed-quarter signal
+series while reusing Phase 2A version resolution and all existing statistical calculations.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -88,6 +90,8 @@ Request IDs, JSON event fields, operation timers, metadata, and privacy exclusio
 in [the API observability design](observability.md).
 Security boundaries, HTTP headers, trusted-host rules, and deployment limitations are described
 in [the security and deployment design](security-deployment.md).
+Loaded-quarter selection, reproducibility metadata, duplicate handling, and historical caveats are
+described in [the historical source-quarter analytics design](historical-quarter-analytics.md).
 
 ## Runtime topology
 

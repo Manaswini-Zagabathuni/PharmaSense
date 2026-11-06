@@ -24,10 +24,19 @@ def test_read_only_analytics_endpoints_execute_against_mysql() -> None:
     try:
         signals = client.get("/api/v1/signals?limit=1&minimum_pair_reports=1")
         drugs = client.get("/api/v1/drugs?limit=1")
+        snapshots = client.get("/api/v1/source-snapshots?limit=1")
+        historical = client.get(
+            "/api/v1/historical/signals/SYNTHETIC-NOT-PRESENT/reactions/SYNTHETIC-NOT-PRESENT",
+            params={"start_quarter": "2023Q1", "end_quarter": "2023Q4"},
+        )
     finally:
         app.dependency_overrides.clear()
 
     assert signals.status_code == 200
     assert drugs.status_code == 200
+    assert snapshots.status_code == 200
+    assert historical.status_code == 200
     assert signals.json()["returned_count"] <= 1
     assert drugs.json()["returned_count"] <= 1
+    assert snapshots.json()["returned_count"] <= 1
+    assert historical.json()["returned_count"] <= 4

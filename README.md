@@ -122,6 +122,9 @@ Interactive development documentation at `/docs` includes the Phase 3A endpoints
 - `GET /api/v1/signals/{drug_name}/reactions/{reaction_term}`
 - `GET /api/v1/drugs`
 - `GET /api/v1/drugs/{drug_name}/reactions`
+- `GET /api/v1/source-snapshots`
+- `GET /api/v1/historical/signals/{drug_name}/reactions/{reaction_term}` (requires
+  `start_quarter` and `end_quarter` in `YYYYQn` form)
 
 API responses include `X-Request-ID`. Request and analytics completion events are emitted as
 privacy-conscious JSON logs containing stable operation fields and durations, never request
@@ -135,6 +138,11 @@ deployment responsibilities.
 
 All analytics are research-only reporting patterns. They do not establish causality or incidence
 and must not be used for clinical decision-making.
+
+Historical endpoints analyze only report rows currently represented by completed ingestions in
+the requested source-quarter range. They return explicit selected-quarter and exclusion metadata;
+they do not reconstruct a true historical “as-of” database state. See the
+[historical quarter analytics design](docs/architecture/historical-quarter-analytics.md).
 
 The dashboard opens on Signal Explorer and provides a Drug Explorer workspace. Vite uses
 `VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to

@@ -14,6 +14,12 @@ from pharmasense.analytics.faers_versions import (
     latest_report_versions_statement,
     report_version_resolution_statement,
 )
+from pharmasense.analytics.historical import (
+    SourceQuarter,
+    historical_resolution_summary_statement,
+    source_snapshot_inventory_statement,
+    successfully_loaded_quarters_statement,
+)
 from pharmasense.analytics.prioritization import (
     SignalThresholds,
     signal_candidate_contingencies_statement,
@@ -122,5 +128,27 @@ def test_signal_candidate_query_executes_on_mysql() -> None:
                     SignalThresholds(minimum_pair_reports=1, minimum_population=1)
                 ).limit(1)
             ).all()
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_historical_analytics_queries_execute_on_mysql() -> None:
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if database_url is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+
+    engine = create_engine(database_url, pool_pre_ping=True)
+    try:
+        with engine.connect() as connection:
+            connection.execute(source_snapshot_inventory_statement().limit(1)).all()
+            connection.execute(
+                successfully_loaded_quarters_statement(
+                    SourceQuarter(2023, 1), SourceQuarter(2023, 4)
+                )
+            ).all()
+            connection.execute(
+                historical_resolution_summary_statement((SourceQuarter(2023, 4),))
+            ).one()
     finally:
         engine.dispose()

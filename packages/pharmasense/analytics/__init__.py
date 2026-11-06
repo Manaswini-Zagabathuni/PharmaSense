@@ -10,9 +10,22 @@ from pharmasense.analytics.drug_reactions import (
     resolved_latest_report_keys_cte,
 )
 from pharmasense.analytics.faers_versions import (
+    ReportPopulationFilter,
     ReportVersionResolutionStatus,
     latest_report_versions_statement,
     report_version_resolution_statement,
+)
+from pharmasense.analytics.historical import (
+    HistoricalAnalysisMetadata,
+    HistoricalPopulationSelectionRule,
+    HistoricalSignalResult,
+    QuarterSignalResult,
+    SourceQuarter,
+    SourceSnapshotRecord,
+    historical_population_filter,
+    historical_resolution_summary_statement,
+    source_snapshot_inventory_statement,
+    successfully_loaded_quarters_statement,
 )
 from pharmasense.analytics.prioritization import (
     PriorityExclusionReason,
@@ -38,13 +51,20 @@ from pharmasense.analytics.signals import (
 __all__ = [
     "ContingencyTable",
     "DisproportionalityMetrics",
+    "HistoricalAnalysisMetadata",
+    "HistoricalPopulationSelectionRule",
+    "HistoricalSignalResult",
     "MetricEstimate",
     "PriorityExclusionReason",
+    "QuarterSignalResult",
+    "ReportPopulationFilter",
     "ReportVersionResolutionStatus",
     "RorConfidenceInterval",
     "SignalEligibilityReason",
     "SignalResult",
     "SignalThresholds",
+    "SourceQuarter",
+    "SourceSnapshotRecord",
     "UndefinedMetricReason",
     "calculate_disproportionality",
     "calculate_ror_confidence_interval",
@@ -54,6 +74,8 @@ __all__ = [
     "drug_report_presence_cte",
     "drug_summary_statement",
     "evaluate_signal",
+    "historical_population_filter",
+    "historical_resolution_summary_statement",
     "latest_report_versions_statement",
     "most_reported_reactions_for_drug_statement",
     "observed_drug_reaction_contingencies_statement",
@@ -62,4 +84,6 @@ __all__ = [
     "report_version_resolution_statement",
     "resolved_latest_report_keys_cte",
     "signal_candidate_contingencies_statement",
+    "source_snapshot_inventory_statement",
+    "successfully_loaded_quarters_statement",
 ]

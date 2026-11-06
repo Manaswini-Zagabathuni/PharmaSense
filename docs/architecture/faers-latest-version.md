@@ -37,6 +37,11 @@ result rather than resolved using an unsupported fallback.
 - `report_version_resolution_statement()`: one diagnostic row per case with status, maximum
   numeric version, and number of reports at that maximum.
 
+Phase 5A adds an optional `ReportPopulationFilter` accepted by both builders. The filter is
+applied before numeric maximum and tie resolution and can restrict source quarters and completed
+ingestion runs. Omitting it preserves the original all-loaded-row behavior exactly. Historical
+analytics use this shared boundary rather than reimplementing the resolution algorithm.
+
 Both statements execute entirely in the database using common table expressions and window
 functions supported by MySQL 8.4. They are transport-independent and are not exposed through a new
 HTTP endpoint in Phase 2A.
