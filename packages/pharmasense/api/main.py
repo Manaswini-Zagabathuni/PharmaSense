@@ -4,20 +4,22 @@ import logging
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from pharmasense.api.errors import AnalyticsExecutionError, AnalyticsUnavailableError
 from pharmasense.api.observability import REQUEST_ID_HEADER, observe_request, safe_request_path
 from pharmasense.api.routes.analytics import router as analytics_router
 from pharmasense.api.routes.system import router as system_router
-from pharmasense.config.settings import get_settings
+from pharmasense.api.security import SECURITY_HEADERS, add_security_headers
+from pharmasense.config.settings import Settings, get_settings
 from pharmasense.telemetry import configure_application_logging, structured_log
 
 logger = logging.getLogger(__name__)
 
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
     """Create the PharmaSense API without connecting to external services."""
-    settings = get_settings()
+    settings = settings or get_settings()
     configure_application_logging(settings.app_log_level)
     application = FastAPI(
         title=settings.app_name,
@@ -26,7 +28,9 @@ def create_app() -> FastAPI:
         docs_url="/docs" if settings.app_environment != "production" else None,
         redoc_url=None,
     )
+    application.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.trusted_hosts))
     application.middleware("http")(observe_request)
+    application.middleware("http")(add_security_headers)
     application.include_router(system_router, prefix="/api/v1", tags=["system"])
     application.include_router(analytics_router, prefix="/api/v1", tags=["analytics"])
 
@@ -57,7 +61,9 @@ def create_app() -> FastAPI:
             method=request.method,
             path=safe_request_path(request),
         )
-        headers = {REQUEST_ID_HEADER: request_id} if isinstance(request_id, str) else None
+        headers = dict(SECURITY_HEADERS)
+        if isinstance(request_id, str):
+            headers[REQUEST_ID_HEADER] = request_id
         return PlainTextResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content="Internal Server Error",

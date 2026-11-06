@@ -21,10 +21,12 @@ drug-reaction, disproportionality, confidence, and prioritization analytics. Pha
 those analytics through a bounded, read-only API, and Phase 3B provides a responsive React
 research dashboard over that API. Phase 4A adds an opt-in synthetic demonstration population and
 a guarded live frontend-to-MySQL verification workflow. Phase 4B adds request correlation,
-privacy-conscious operation timing, and safe application metadata. See
+privacy-conscious operation timing, and safe application metadata. Phase 4C adds HTTP response
+hardening, trusted-host enforcement, and production configuration validation. See
 [the architecture](docs/architecture/overview.md),
 [the local full-stack runbook](docs/architecture/local-full-stack.md),
 [the observability design](docs/architecture/observability.md),
+[the security and deployment design](docs/architecture/security-deployment.md),
 [analytics API](docs/architecture/analytics-api.md),
 [frontend dashboard](docs/architecture/frontend-dashboard.md),
 [FAERS ingestion design](docs/architecture/faers-ingestion.md),
@@ -124,6 +126,12 @@ Interactive development documentation at `/docs` includes the Phase 3A endpoints
 API responses include `X-Request-ID`. Request and analytics completion events are emitted as
 privacy-conscious JSON logs containing stable operation fields and durations, never request
 bodies, query strings, credentials, database URLs, or raw FAERS records.
+
+API responses also include `nosniff`, anti-framing, no-referrer, and restrictive browser
+permissions headers. `APP_TRUSTED_HOSTS` controls accepted hostnames. Production configuration
+must set it explicitly, cannot use the unrestricted `*` host, and cannot use debug logging. See
+the security design for reverse-proxy, TLS, CSP/HSTS, static frontend hosting, and remaining
+deployment responsibilities.
 
 All analytics are research-only reporting patterns. They do not establish causality or incidence
 and must not be used for clinical decision-making.

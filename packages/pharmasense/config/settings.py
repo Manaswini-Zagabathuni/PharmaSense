@@ -1,13 +1,16 @@
 """Typed, environment-based settings."""
 
+import re
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 from pharmasense import __version__
+
+_HOST_PATTERN = re.compile(r"(?:\*|(?:\*\.)?[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?)")
 
 
 class Settings(BaseSettings):
@@ -26,6 +29,7 @@ class Settings(BaseSettings):
     app_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     app_host: str = "127.0.0.1"
     app_port: int = 8000
+    app_trusted_hosts: str = "localhost,127.0.0.1,testserver,api"
 
     database_url: SecretStr | None = None
     mysql_host: str | None = None
@@ -33,6 +37,40 @@ class Settings(BaseSettings):
     mysql_database: str | None = None
     mysql_user: str | None = None
     mysql_password: SecretStr | None = None
+
+    @field_validator("app_trusted_hosts")
+    @classmethod
+    def validate_trusted_hosts(cls, value: str) -> str:
+        """Normalize and validate a comma-separated Starlette trusted-host allowlist."""
+
+        hosts = [host.strip() for host in value.split(",")]
+        if not hosts or any(not host for host in hosts):
+            raise ValueError("APP_TRUSTED_HOSTS must contain one or more hosts")
+        if len(hosts) > 32:
+            raise ValueError("APP_TRUSTED_HOSTS cannot contain more than 32 hosts")
+        if any(_HOST_PATTERN.fullmatch(host) is None for host in hosts):
+            raise ValueError("APP_TRUSTED_HOSTS contains an invalid host pattern")
+        return ",".join(dict.fromkeys(hosts))
+
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> "Settings":
+        """Require explicit, fail-closed host and logging configuration in production."""
+
+        if self.app_environment != "production":
+            return self
+        if "app_trusted_hosts" not in self.model_fields_set:
+            raise ValueError("APP_TRUSTED_HOSTS must be explicitly configured in production")
+        if "*" in self.trusted_hosts:
+            raise ValueError("APP_TRUSTED_HOSTS cannot contain '*' in production")
+        if self.app_log_level == "DEBUG":
+            raise ValueError("APP_LOG_LEVEL cannot be DEBUG in production")
+        return self
+
+    @property
+    def trusted_hosts(self) -> tuple[str, ...]:
+        """Return the validated host allowlist for Starlette middleware."""
+
+        return tuple(self.app_trusted_hosts.split(","))
 
     def sqlalchemy_url(self) -> URL | str | None:
         """Return a SQLAlchemy URL without exposing credentials in logs."""

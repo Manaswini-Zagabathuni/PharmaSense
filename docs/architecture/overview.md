@@ -25,6 +25,8 @@ Phase 4A documents and verifies the local Vite -> FastAPI -> MySQL runtime path 
 transactional, idempotent, explicitly synthetic demonstration seed outside production ingestion.
 Phase 4B adds privacy-conscious request correlation, safe operational timing, and a minimal typed
 metadata endpoint without changing analytics or persistence semantics.
+Phase 4C adds fixed API response hardening, configurable trusted-host enforcement, production
+configuration validation, and incremental container lifecycle restrictions.
 
 This boundary keeps scientific logic independent of transport concerns and avoids premature
 distributed-system complexity.
@@ -84,6 +86,8 @@ The Compose topology, synthetic demonstration boundary, and guarded live verific
 described in [the local full-stack runbook](local-full-stack.md).
 Request IDs, JSON event fields, operation timers, metadata, and privacy exclusions are specified
 in [the API observability design](observability.md).
+Security boundaries, HTTP headers, trusted-host rules, and deployment limitations are described
+in [the security and deployment design](security-deployment.md).
 
 ## Runtime topology
 

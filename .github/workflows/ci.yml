@@ -36,6 +36,12 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - name: Validate Docker Compose configuration
+        env:
+          APP_TRUSTED_HOSTS: localhost,127.0.0.1,api
+          MYSQL_PASSWORD: test-only-password
+          MYSQL_ROOT_PASSWORD: test-only-root-password
+        run: docker compose config --quiet
       - name: Install dependencies
         run: |
           python -m pip install -r requirements.lock

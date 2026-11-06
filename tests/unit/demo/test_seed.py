@@ -82,6 +82,7 @@ def test_demo_seed_cli_refuses_production(
         ["pharmasense-demo-seed", "--confirm-synthetic"],
     )
     monkeypatch.setenv("APP_ENVIRONMENT", "production")
+    monkeypatch.setenv("APP_TRUSTED_HOSTS", "api.example.test")
 
     with pytest.raises(SystemExit) as error:
         main()
