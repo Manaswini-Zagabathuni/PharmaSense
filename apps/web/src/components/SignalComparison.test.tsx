@@ -100,6 +100,9 @@ test('validates complete unique selections and bounds the comparison at four pai
   vi.stubGlobal('fetch', fetchMock)
   render(<SignalComparison />)
 
+  expect(screen.getByRole('combobox', { name: 'Drug name for pair 1' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Reaction term for pair 1' })).toBeInTheDocument()
+
   fireEvent.click(screen.getByRole('button', { name: 'Compare signals' }))
   expect(screen.getByRole('alert')).toHaveTextContent(
     'Enter both a drug name and reaction term for every pair.',

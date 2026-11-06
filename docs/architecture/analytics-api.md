@@ -1,5 +1,10 @@
 # Read-only analytics API
 
+Bounded drug and reaction autocomplete is exposed through `/api/v1/discovery/drugs` and
+`/api/v1/discovery/reactions`. Both require a 2–200 character `q`, accept a `limit` from 1–25, and
+return distinct source-derived terms in deterministic order. See
+[source-term discovery](source-term-discovery.md) for population, matching, and privacy semantics.
+
 Phase 3A exposes the existing Phase 2 FAERS analytics through versioned FastAPI endpoints. The
 HTTP layer validates requests and serializes typed results. It does not reimplement latest-version
 selection, presence deduplication, contingency construction, PRR, ROR, confidence intervals, or

@@ -93,3 +93,7 @@ not clinical decision-making. It does not add causal language, risk estimates, o
 Phase 3B has no authentication because the existing stack is local-only. A public deployment must
 add the identity, authorization, rate-limiting, and deployment controls already deferred in the
 architecture overview.
+
+Historical Trends and Signal Comparison use the shared bounded source-term combobox documented in
+[source-term discovery](source-term-discovery.md). Suggestions are optional source-derived values;
+manual entry remains available and no scientific calculation or normalization occurs in React.

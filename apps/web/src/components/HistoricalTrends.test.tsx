@@ -172,6 +172,8 @@ test('renders API-provided quarter results, diagnostics, and source provenance',
 
   expect(screen.getByText('Loading source-quarter inventory…')).toBeInTheDocument()
   expect(await screen.findByText('Choose a drug–reaction pair')).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Drug name' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Reaction term' })).toBeInTheDocument()
   expect(screen.getByLabelText('Start quarter')).toHaveValue('2023Q1')
   expect(screen.getByLabelText('End quarter')).toHaveValue('2023Q2')
 

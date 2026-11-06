@@ -42,6 +42,8 @@ def test_service_executes_only_read_only_analytics_and_reconciles_results(
     drugs = service.list_drugs(limit=2, offset=0)
     reactions = service.list_drug_reactions("TARGET", limit=2)
     missing_drug = service.list_drug_reactions("MISSING", limit=2)
+    drug_terms = service.discover_drug_terms("tar", limit=2)
+    reaction_terms = service.discover_reaction_terms("event", limit=2)
 
     with Session(engine) as session:
         after = (
@@ -59,6 +61,8 @@ def test_service_executes_only_read_only_analytics_and_reconciles_results(
     assert reactions is not None
     assert [record.reaction_term for record in reactions] == ["OTHER EVENT", "EVENT"]
     assert missing_drug is None
+    assert [record.term for record in drug_terms] == ["TARGET"]
+    assert [record.term for record in reaction_terms] == ["EVENT", "OTHER EVENT"]
     assert after == before
 
     events: list[dict[str, object]] = [
@@ -72,6 +76,8 @@ def test_service_executes_only_read_only_analytics_and_reconciles_results(
         "signal_detail_retrieval",
         "drug_list_retrieval",
         "drug_reaction_retrieval",
+        "drug_term_discovery_retrieval",
+        "reaction_term_discovery_retrieval",
     }
     assert all(event["outcome"] == "success" for event in events)
     durations = [event["duration_ms"] for event in events]

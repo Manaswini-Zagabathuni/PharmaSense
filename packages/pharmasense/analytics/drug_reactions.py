@@ -131,3 +131,41 @@ def most_reported_reactions_for_drug_statement(
     if limit is not None:
         statement = statement.limit(limit)
     return statement
+
+
+def drug_term_discovery_statement(query: str, *, limit: int) -> Select[tuple[str]]:
+    """Find bounded source drug names in the resolved latest-report population."""
+
+    if not query:
+        raise ValueError("query must not be empty")
+    if limit < 1:
+        raise ValueError("limit must be a positive integer")
+    latest = resolved_latest_report_keys_cte()
+    presence = drug_report_presence_cte(latest)
+    normalized_term = func.lower(presence.c.drug_name)
+    return (
+        select(presence.c.drug_name.label("term"))
+        .where(normalized_term.contains(query.lower(), autoescape=True))
+        .group_by(presence.c.drug_name)
+        .order_by(normalized_term, presence.c.drug_name)
+        .limit(limit)
+    )
+
+
+def reaction_term_discovery_statement(query: str, *, limit: int) -> Select[tuple[str]]:
+    """Find bounded source reaction terms in the resolved latest-report population."""
+
+    if not query:
+        raise ValueError("query must not be empty")
+    if limit < 1:
+        raise ValueError("limit must be a positive integer")
+    latest = resolved_latest_report_keys_cte()
+    presence = reaction_report_presence_cte(latest)
+    normalized_term = func.lower(presence.c.reaction_term)
+    return (
+        select(presence.c.reaction_term.label("term"))
+        .where(normalized_term.contains(query.lower(), autoescape=True))
+        .group_by(presence.c.reaction_term)
+        .order_by(normalized_term, presence.c.reaction_term)
+        .limit(limit)
+    )

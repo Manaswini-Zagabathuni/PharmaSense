@@ -21,6 +21,8 @@ from pharmasense.api.schemas.analytics import (
     SignalResponse,
     SourceSnapshotListResponse,
     SourceSnapshotResponse,
+    SourceTermResponse,
+    TermDiscoveryResponse,
 )
 from pharmasense.api.services.analytics import AnalyticsService
 
@@ -38,9 +40,16 @@ _MAX_RATIO_THRESHOLD = 1_000_000.0
 _MAX_TERM_LENGTH = 1000
 _MAX_SNAPSHOT_LIMIT = 200
 _MAX_HISTORICAL_QUARTERS = 80
+_MIN_DISCOVERY_QUERY_LENGTH = 2
+_MAX_DISCOVERY_QUERY_LENGTH = 200
+_MAX_DISCOVERY_LIMIT = 25
 _HISTORICAL_METHOD_NOTICE = (
     "Results filter report rows currently loaded from completed source-quarter ingestions. "
     "They are not a retrospective as-of reconstruction of every FDA snapshot."
+)
+_SOURCE_TERM_NOTICE = (
+    "Returned terms are source-derived FAERS values, not normalized clinical concepts, synonym "
+    "mappings, or recommendations."
 )
 
 
@@ -51,6 +60,19 @@ def _parse_source_quarter(value: str) -> SourceQuarter:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
+
+
+def _normalize_discovery_query(query: str) -> str:
+    normalized = query.strip()
+    if len(normalized) < _MIN_DISCOVERY_QUERY_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                f"Discovery query must contain at least {_MIN_DISCOVERY_QUERY_LENGTH} "
+                "non-whitespace characters."
+            ),
+        )
+    return normalized
 
 
 @router.get(
@@ -168,6 +190,62 @@ def drug_reactions(
         returned_count=len(items),
         limit=limit,
         research_notice=_RESEARCH_NOTICE,
+    )
+
+
+@router.get(
+    "/discovery/drugs",
+    response_model=TermDiscoveryResponse,
+    responses={
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+        status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorResponse},
+    },
+)
+def discover_drugs(
+    service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    q: Annotated[
+        str,
+        Query(min_length=_MIN_DISCOVERY_QUERY_LENGTH, max_length=_MAX_DISCOVERY_QUERY_LENGTH),
+    ],
+    limit: Annotated[int, Query(ge=1, le=_MAX_DISCOVERY_LIMIT)] = 10,
+) -> TermDiscoveryResponse:
+    """Return bounded resolved-population source drug-name suggestions."""
+
+    records = service.discover_drug_terms(_normalize_discovery_query(q), limit=limit)
+    return TermDiscoveryResponse(
+        items=[SourceTermResponse.model_validate(record) for record in records],
+        returned_count=len(records),
+        limit=limit,
+        research_notice=_RESEARCH_NOTICE,
+        source_term_notice=_SOURCE_TERM_NOTICE,
+    )
+
+
+@router.get(
+    "/discovery/reactions",
+    response_model=TermDiscoveryResponse,
+    responses={
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+        status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorResponse},
+    },
+)
+def discover_reactions(
+    service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    q: Annotated[
+        str,
+        Query(min_length=_MIN_DISCOVERY_QUERY_LENGTH, max_length=_MAX_DISCOVERY_QUERY_LENGTH),
+    ],
+    limit: Annotated[int, Query(ge=1, le=_MAX_DISCOVERY_LIMIT)] = 10,
+) -> TermDiscoveryResponse:
+    """Return bounded resolved-population source reaction-term suggestions."""
+
+    records = service.discover_reaction_terms(_normalize_discovery_query(q), limit=limit)
+    return TermDiscoveryResponse(
+        items=[SourceTermResponse.model_validate(record) for record in records],
+        returned_count=len(records),
+        limit=limit,
+        research_notice=_RESEARCH_NOTICE,
+        source_term_notice=_SOURCE_TERM_NOTICE,
     )
 
 

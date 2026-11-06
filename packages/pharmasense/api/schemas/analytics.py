@@ -118,6 +118,22 @@ class DrugReactionListResponse(AnalyticsSchema):
     research_notice: str
 
 
+class SourceTermResponse(AnalyticsSchema):
+    """One exact source-derived FAERS term, without normalization claims."""
+
+    term: str
+
+
+class TermDiscoveryResponse(AnalyticsSchema):
+    """Bounded deterministic source-term discovery results."""
+
+    items: list[SourceTermResponse]
+    returned_count: int
+    limit: int
+    research_notice: str
+    source_term_notice: str
+
+
 class ErrorResponse(AnalyticsSchema):
     """Sanitized API error body."""
 

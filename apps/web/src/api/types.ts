@@ -100,6 +100,18 @@ export interface DrugReactionListResponse {
   research_notice: string
 }
 
+export interface SourceTerm {
+  term: string
+}
+
+export interface TermDiscoveryResponse {
+  items: SourceTerm[]
+  returned_count: number
+  limit: number
+  research_notice: string
+  source_term_notice: string
+}
+
 export type HistoricalPopulationSelectionRule =
   'COMPLETED_INGESTIONS_IN_INCLUSIVE_QUARTER_RANGE'
 

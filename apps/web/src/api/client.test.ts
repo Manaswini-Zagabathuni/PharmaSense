@@ -2,6 +2,8 @@ import { afterEach, expect, test, vi } from 'vitest'
 
 import {
   ApiError,
+  discoverDrugTerms,
+  discoverReactionTerms,
   getDrugReactions,
   getDrugs,
   getHistoricalSignal,
@@ -29,6 +31,8 @@ test('builds bounded query and safely encoded path requests', async () => {
     startQuarter: '2023Q1',
     endQuarter: '2023Q4',
   })
+  await discoverDrugTerms('Drug A/B', 10)
+  await discoverReactionTerms('Head ache', 5)
 
   expect(fetchMock.mock.calls[0]?.[0]).toContain('/drugs?limit=25&offset=50')
   expect(fetchMock.mock.calls[1]?.[0]).toContain('/drugs/Drug%20A%2FB/reactions?limit=10')
@@ -37,6 +41,8 @@ test('builds bounded query and safely encoded path requests', async () => {
   expect(fetchMock.mock.calls[4]?.[0]).toContain(
     '/historical/signals/Drug%20A%2FB/reactions/Event%20C%2FD?start_quarter=2023Q1&end_quarter=2023Q4',
   )
+  expect(fetchMock.mock.calls[5]?.[0]).toContain('/discovery/drugs?q=Drug+A%2FB&limit=10')
+  expect(fetchMock.mock.calls[6]?.[0]).toContain('/discovery/reactions?q=Head+ache&limit=5')
 })
 
 test('uses sanitized API and fallback error messages', async () => {

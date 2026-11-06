@@ -154,6 +154,10 @@ pair counts, and ROR intervals while keeping the complete tabular results. See t
 [Historical Trends frontend design](docs/architecture/historical-trends-frontend.md).
 Signal Comparison architecture and safeguards are documented in the
 [Signal Comparison design](docs/architecture/signal-comparison.md).
+Historical Trends and Signal Comparison also offer bounded, optional source-term suggestions after
+two characters. Returned spellings come from the resolved FAERS population and are not normalized
+concepts or clinical recommendations; see the
+[source-term discovery design](docs/architecture/source-term-discovery.md).
 
 Vite uses
 `VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to

@@ -5,8 +5,10 @@ from pharmasense.analytics.drug_reactions import (
     drug_reaction_summary_statement,
     drug_report_presence_cte,
     drug_summary_statement,
+    drug_term_discovery_statement,
     most_reported_reactions_for_drug_statement,
     reaction_report_presence_cte,
+    reaction_term_discovery_statement,
     resolved_latest_report_keys_cte,
 )
 from pharmasense.analytics.faers_versions import (
@@ -73,6 +75,7 @@ __all__ = [
     "drug_reaction_summary_statement",
     "drug_report_presence_cte",
     "drug_summary_statement",
+    "drug_term_discovery_statement",
     "evaluate_signal",
     "historical_population_filter",
     "historical_resolution_summary_statement",
@@ -81,6 +84,7 @@ __all__ = [
     "observed_drug_reaction_contingencies_statement",
     "rank_prioritized_signals",
     "reaction_report_presence_cte",
+    "reaction_term_discovery_statement",
     "report_version_resolution_statement",
     "resolved_latest_report_keys_cte",
     "signal_candidate_contingencies_statement",

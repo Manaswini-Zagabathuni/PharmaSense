@@ -1,6 +1,6 @@
 """Drug-reaction analytics tests using clearly synthetic FAERS-shaped records."""
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from itertools import count
 
@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from pharmasense.analytics.drug_reactions import (
     drug_reaction_summary_statement,
     drug_summary_statement,
+    drug_term_discovery_statement,
     most_reported_reactions_for_drug_statement,
+    reaction_term_discovery_statement,
 )
 from pharmasense.db.base import Base
 from pharmasense.db.models import (
@@ -200,14 +202,46 @@ def test_non_positive_reaction_limit_is_rejected() -> None:
         most_reported_reactions_for_drug_statement("ALPHA", limit=0)
 
 
+def test_term_discovery_is_case_insensitive_deduplicated_ordered_and_bounded(
+    session: Session,
+) -> None:
+    drugs = session.execute(drug_term_discovery_statement("aLp", limit=1)).scalars().all()
+    reactions = session.execute(reaction_term_discovery_statement("a", limit=10)).scalars().all()
+
+    assert drugs == ["ALPHA"]
+    assert reactions == ["HEADACHE", "NAUSEA", "RASH"]
+    assert session.execute(drug_term_discovery_statement("%", limit=10)).all() == []
+
+
+def test_term_discovery_returns_empty_and_excludes_unresolved_versions(session: Session) -> None:
+    assert session.execute(drug_term_discovery_statement("missing", limit=10)).all() == []
+    assert session.execute(reaction_term_discovery_statement("excluded", limit=10)).all() == []
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        lambda: drug_term_discovery_statement("", limit=10),
+        lambda: reaction_term_discovery_statement("event", limit=0),
+    ],
+)
+def test_term_discovery_rejects_unbounded_arguments(statement: Callable[[], object]) -> None:
+    with pytest.raises(ValueError):
+        statement()
+
+
 def test_statements_compile_for_mysql_with_bound_drug_filter() -> None:
     dialect = mysql.dialect()  # type: ignore[no-untyped-call]
     drug_sql = str(drug_summary_statement().compile(dialect=dialect))
     pair_sql = str(drug_reaction_summary_statement().compile(dialect=dialect))
     selected = most_reported_reactions_for_drug_statement("ALPHA", limit=5)
     selected_sql = str(selected.compile(dialect=dialect))
+    discovery = drug_term_discovery_statement("ALP%", limit=5)
+    discovery_sql = str(discovery.compile(dialect=dialect))
 
     assert "resolved_latest_report_versions" in drug_sql
     assert "SELECT DISTINCT" in pair_sql
     assert "ALPHA" not in selected_sql
     assert selected.compile(dialect=dialect).params
+    assert "ALP%" not in discovery_sql
+    assert discovery.compile(dialect=dialect).params

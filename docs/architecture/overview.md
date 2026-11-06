@@ -106,6 +106,11 @@ non-calculation boundary are specified in
 The multi-pair input bound, existing-API data flow, deterministic ordering, and scientific
 comparison safeguards are documented in [the Signal Comparison design](signal-comparison.md).
 
+Phase 6B adds bounded source-term discovery to Historical Trends and Signal Comparison. The API
+reuses the resolved latest-report population, applies literal case-insensitive matching and limits in
+SQL, and returns only minimal source terms. The UI keeps manual entry available. Search semantics and
+non-clinical safeguards are documented in [the source-term discovery design](source-term-discovery.md).
+
 ## Runtime topology
 
 Phase 0 runs three services:

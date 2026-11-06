@@ -29,6 +29,7 @@ from pharmasense.api.services.analytics import (
     AnalyticsService,
     DrugReactionSummaryRecord,
     DrugSummaryRecord,
+    SourceTermRecord,
 )
 from pharmasense.config.settings import Settings
 
@@ -44,6 +45,9 @@ class StubAnalyticsService:
     signal_calls: list[tuple[int, SignalThresholds]] = field(default_factory=list)
     snapshots: list[SourceSnapshotRecord] = field(default_factory=list)
     historical_result: HistoricalSignalResult | None = None
+    drug_terms: list[SourceTermRecord] = field(default_factory=list)
+    reaction_terms: list[SourceTermRecord] = field(default_factory=list)
+    discovery_calls: list[tuple[str, str, int]] = field(default_factory=list)
 
     def list_prioritized_signals(
         self, *, limit: int, thresholds: SignalThresholds
@@ -71,6 +75,14 @@ class StubAnalyticsService:
 
     def list_source_snapshots(self, *, limit: int) -> list[SourceSnapshotRecord]:
         return self.snapshots[:limit]
+
+    def discover_drug_terms(self, query: str, *, limit: int) -> list[SourceTermRecord]:
+        self.discovery_calls.append(("drugs", query, limit))
+        return self.drug_terms[:limit]
+
+    def discover_reaction_terms(self, query: str, *, limit: int) -> list[SourceTermRecord]:
+        self.discovery_calls.append(("reactions", query, limit))
+        return self.reaction_terms[:limit]
 
     def get_historical_signal(
         self,
@@ -252,6 +264,67 @@ def test_drug_reaction_limit_is_validated(limit: int) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_source_term_discovery_is_bounded_trimmed_and_minimal() -> None:
+    service = StubAnalyticsService(
+        drug_terms=[SourceTermRecord("ASPIRIN")],
+        reaction_terms=[SourceTermRecord("HEADACHE")],
+    )
+    client = _client_with(service)
+
+    drugs = client.get("/api/v1/discovery/drugs", params={"q": "  asp  ", "limit": 1})
+    reactions = client.get("/api/v1/discovery/reactions", params={"q": "head"})
+
+    assert drugs.status_code == reactions.status_code == 200
+    assert drugs.json()["items"] == [{"term": "ASPIRIN"}]
+    assert reactions.json()["items"] == [{"term": "HEADACHE"}]
+    assert "not normalized clinical concepts" in drugs.json()["source_term_notice"]
+    assert service.discovery_calls == [("drugs", "asp", 1), ("reactions", "head", 10)]
+    assert "password" not in dumps(drugs.json()).lower()
+
+
+def test_source_term_discovery_returns_empty_results() -> None:
+    response = _client_with(StubAnalyticsService()).get(
+        "/api/v1/discovery/drugs", params={"q": "absent"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["returned_count"] == 0
+
+
+@pytest.mark.parametrize(
+    ("path", "params"),
+    [
+        ("/api/v1/discovery/drugs", {}),
+        ("/api/v1/discovery/drugs", {"q": "a"}),
+        ("/api/v1/discovery/drugs", {"q": "  "}),
+        ("/api/v1/discovery/drugs", {"q": "a" * 201}),
+        ("/api/v1/discovery/reactions", {"q": "event", "limit": 0}),
+        ("/api/v1/discovery/reactions", {"q": "event", "limit": 26}),
+    ],
+)
+def test_source_term_discovery_validates_query_and_limit(
+    path: str, params: dict[str, str | int]
+) -> None:
+    response = _client_with(StubAnalyticsService()).get(path, params=params)
+
+    assert response.status_code == 422
+
+
+def test_source_term_discovery_database_failure_is_sanitized() -> None:
+    class FailingDiscoveryService(StubAnalyticsService):
+        def discover_drug_terms(self, query: str, *, limit: int) -> list[SourceTermRecord]:
+            raise AnalyticsExecutionError("mysql://user:secret@example.invalid/database")
+
+    response = _client_with(FailingDiscoveryService()).get(
+        "/api/v1/discovery/drugs", params={"q": "drug"}
+    )
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Analytics request could not be completed."}
+    assert "secret" not in response.text
 
 
 def test_unavailable_database_and_internal_errors_are_sanitized() -> None:

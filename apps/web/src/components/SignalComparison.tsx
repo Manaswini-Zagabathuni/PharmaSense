@@ -4,6 +4,7 @@ import { ApiError, getSignalDetail } from '../api/client'
 import type { SignalDetailResponse } from '../api/types'
 import { EmptyPanel, ErrorPanel, LoadingPanel } from './feedback'
 import { formatCount, formatRatio, formatReason } from './format'
+import { SourceTermCombobox } from './SourceTermCombobox'
 
 const MINIMUM_PAIRS = 2
 const MAXIMUM_PAIRS = 4
@@ -150,24 +151,20 @@ export function SignalComparison() {
           {pairs.map((pair, index) => (
             <fieldset key={pair.id}>
               <legend>Pair {index + 1}</legend>
-              <label>
-                Drug name <span className="sr-only">for pair {index + 1}</span>
-                <input
-                  value={pair.drugName}
-                  onChange={(event) => updatePair(pair.id, 'drugName', event.target.value)}
-                  autoComplete="off"
-                  required
-                />
-              </label>
-              <label>
-                Reaction term <span className="sr-only">for pair {index + 1}</span>
-                <input
-                  value={pair.reactionTerm}
-                  onChange={(event) => updatePair(pair.id, 'reactionTerm', event.target.value)}
-                  autoComplete="off"
-                  required
-                />
-              </label>
+              <SourceTermCombobox
+                id={`comparison-drug-${pair.id}`}
+                label={`Drug name for pair ${index + 1}`}
+                kind="drugs"
+                value={pair.drugName}
+                onChange={(value) => updatePair(pair.id, 'drugName', value)}
+              />
+              <SourceTermCombobox
+                id={`comparison-reaction-${pair.id}`}
+                label={`Reaction term for pair ${index + 1}`}
+                kind="reactions"
+                value={pair.reactionTerm}
+                onChange={(value) => updatePair(pair.id, 'reactionTerm', value)}
+              />
               {pairs.length > MINIMUM_PAIRS && (
                 <button
                   className="text-button"

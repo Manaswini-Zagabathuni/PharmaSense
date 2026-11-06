@@ -13,6 +13,7 @@ import type {
 import { EmptyPanel, ErrorPanel, LoadingPanel } from './feedback'
 import { formatCount, formatRatio, formatReason } from './format'
 import { HistoricalComparison } from './HistoricalComparison'
+import { SourceTermCombobox } from './SourceTermCombobox'
 
 const SNAPSHOT_LIMIT = 200
 
@@ -151,24 +152,20 @@ export function HistoricalTrends() {
             aria-label="Historical signal selection"
             noValidate
           >
-            <label>
-              Drug name
-              <input
-                value={draft.drugName}
-                onChange={(event) => setDraft({ ...draft, drugName: event.target.value })}
-                autoComplete="off"
-                required
-              />
-            </label>
-            <label>
-              Reaction term
-              <input
-                value={draft.reactionTerm}
-                onChange={(event) => setDraft({ ...draft, reactionTerm: event.target.value })}
-                autoComplete="off"
-                required
-              />
-            </label>
+            <SourceTermCombobox
+              id="historical-drug-name"
+              label="Drug name"
+              kind="drugs"
+              value={draft.drugName}
+              onChange={(drugName) => setDraft({ ...draft, drugName })}
+            />
+            <SourceTermCombobox
+              id="historical-reaction-term"
+              label="Reaction term"
+              kind="reactions"
+              value={draft.reactionTerm}
+              onChange={(reactionTerm) => setDraft({ ...draft, reactionTerm })}
+            />
             <label>
               Start quarter
               <select

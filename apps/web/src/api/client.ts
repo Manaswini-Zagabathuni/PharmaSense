@@ -6,6 +6,7 @@ import type {
   SignalDetailResponse,
   SignalListResponse,
   SourceSnapshotListResponse,
+  TermDiscoveryResponse,
 } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
@@ -89,6 +90,32 @@ export function getDrugReactions(
     `/drugs/${encodeURIComponent(drugName)}/reactions?${params.toString()}`,
     signal,
   )
+}
+
+function discoverTerms(
+  kind: 'drugs' | 'reactions',
+  query: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<TermDiscoveryResponse> {
+  const params = new URLSearchParams({ q: query, limit: String(limit) })
+  return request<TermDiscoveryResponse>(`/discovery/${kind}?${params.toString()}`, signal)
+}
+
+export function discoverDrugTerms(
+  query: string,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<TermDiscoveryResponse> {
+  return discoverTerms('drugs', query, limit, signal)
+}
+
+export function discoverReactionTerms(
+  query: string,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<TermDiscoveryResponse> {
+  return discoverTerms('reactions', query, limit, signal)
 }
 
 export function getSourceSnapshots(

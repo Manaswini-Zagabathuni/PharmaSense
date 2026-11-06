@@ -14,7 +14,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from pharmasense.analytics.drug_reactions import (
     drug_report_presence_cte,
     drug_summary_statement,
+    drug_term_discovery_statement,
     most_reported_reactions_for_drug_statement,
+    reaction_term_discovery_statement,
     resolved_latest_report_keys_cte,
 )
 from pharmasense.analytics.historical import (
@@ -62,6 +64,13 @@ class DrugReactionSummaryRecord:
     reaction_term: str
     report_count: int
     case_count: int
+
+
+@dataclass(frozen=True)
+class SourceTermRecord:
+    """One source-derived term suitable for bounded discovery UI suggestions."""
+
+    term: str
 
 
 class AnalyticsService:
@@ -205,6 +214,28 @@ class AnalyticsService:
                 )
                 for row in rows
             ]
+
+    def discover_drug_terms(self, query: str, *, limit: int) -> list[SourceTermRecord]:
+        """Return bounded source drug-name matches from the resolved population."""
+
+        with (
+            timed_operation(logger, "drug_term_discovery_retrieval"),
+            self._connect() as connection,
+        ):
+            rows = connection.execute(drug_term_discovery_statement(query, limit=limit)).mappings()
+            return [SourceTermRecord(term=str(row["term"])) for row in rows]
+
+    def discover_reaction_terms(self, query: str, *, limit: int) -> list[SourceTermRecord]:
+        """Return bounded source reaction-term matches from the resolved population."""
+
+        with (
+            timed_operation(logger, "reaction_term_discovery_retrieval"),
+            self._connect() as connection,
+        ):
+            rows = connection.execute(
+                reaction_term_discovery_statement(query, limit=limit)
+            ).mappings()
+            return [SourceTermRecord(term=str(row["term"])) for row in rows]
 
     def get_historical_signal(
         self,
