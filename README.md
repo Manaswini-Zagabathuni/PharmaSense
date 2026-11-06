@@ -1,274 +1,315 @@
 # PharmaSense
 
-**AI-Powered Drug Safety Intelligence Platform**
+**Research-oriented pharmacovigilance and FDA FAERS analytics**
 
 *Detect patterns. Evaluate signals. Explore evidence.*
 
-PharmaSense is a research-oriented platform for exploring potential drug–adverse-event
-reporting signals in public FDA adverse-event data and connecting those signals to official
-safety actions and labeling evidence.
+PharmaSense is a full-stack research platform for exploring reported drug–reaction patterns in
+loaded FDA Adverse Event Reporting System (FAERS) data. It turns versioned spontaneous-report data
+into bounded, inspectable analytics while preserving source provenance, historical report versions,
+statistical diagnostics, and reproducible user-selected configurations.
 
 > [!IMPORTANT]
-> PharmaSense is research software, not a medical device or clinical decision-support system.
-> A reporting association is not proof of causation, incidence, or comparative safety. Do not
-> use this project to diagnose, treat, prescribe, or change medication.
+> FAERS is a spontaneous reporting system. PharmaSense measures reporting patterns; it does not
+> establish causality, incidence, clinical risk, comparative safety, or treatment recommendations.
+> This project is for research and exploratory analysis, not clinical decision-making.
 
-Phase 0 provides the engineering foundation. Phase 1A adds a reviewed design, Phase 1B adds a
-streaming parser and aggregate quality report for the approved FDA 2023 Q4 ASCII archive, and
-Phase 1C adds the normalized SQLAlchemy schema and Alembic migration. Phase 1D adds restartable,
-checksum-gated database ingestion and reconciliation. Phase 2 adds read-only latest-version,
-drug-reaction, disproportionality, confidence, and prioritization analytics. Phase 3A exposes
-those analytics through a bounded, read-only API, and Phase 3B provides a responsive React
-research dashboard over that API. Phase 4A adds an opt-in synthetic demonstration population and
-a guarded live frontend-to-MySQL verification workflow. Phase 4B adds request correlation,
-privacy-conscious operation timing, and safe application metadata. Phase 4C adds HTTP response
-hardening, trusted-host enforcement, and production configuration validation. See
-[the architecture](docs/architecture/overview.md),
-[the local full-stack runbook](docs/architecture/local-full-stack.md),
-[the observability design](docs/architecture/observability.md),
-[the security and deployment design](docs/architecture/security-deployment.md),
-[analytics API](docs/architecture/analytics-api.md),
-[frontend dashboard](docs/architecture/frontend-dashboard.md),
-[FAERS ingestion design](docs/architecture/faers-ingestion.md),
-[implemented schema](docs/architecture/faers-schema.md),
-[official data sources](docs/data-sources/official-sources.md), and
-[scientific limitations](docs/scientific-methods/faers-limitations.md).
-The latest environment-specific check record is in
-[Phase 1D verification](docs/phase-1d-verification.md).
+## Why this project exists
 
-## Implemented services
+Large adverse-event datasets are difficult to parse, version, explore, and analyze consistently.
+Naive joins can inflate counts, follow-up reports can be mistaken for independent cases, and
+statistical ratios can be presented without their underlying evidence or limitations.
 
-- `mysql`: structured storage and Alembic migration target
-- `api`: FastAPI system endpoints and versioned read-only FAERS analytics
-- `web`: React, TypeScript, and Vite read-only analytics dashboard
+PharmaSense provides one traceable workflow:
 
-There is intentionally no Redis, Kafka, workflow orchestrator, retrieval service, or worker yet.
+| Stage | Existing behavior |
+| --- | --- |
+| **Discover** | Search bounded, source-derived drug and reaction terms. |
+| **Explore** | Review drug summaries, reaction profiles, and observed signal detail. |
+| **Analyze** | Inspect report-level contingency counts, PRR, ROR, confidence intervals, and historical quarter results. |
+| **Compare** | Place two to four selected drug–reaction pairs side by side without browser-side recalculation. |
+| **Reproduce** | Bookmark or copy validated analysis configurations that can be rerun against currently loaded data. |
 
-## Prerequisites
+## Implemented capabilities
 
-- Python 3.12
-- Node.js 22 and pnpm 11.25.0
-- MySQL 8.4, or Docker with Docker Compose
+- **Project Overview** — API-independent landing experience explaining the workflow and scientific
+  boundary.
+- **Signal Explorer and Signal Detail** — bounded signal prioritization, complete `a/b/c/d`
+  contingency counts, PRR, ROR, log-ROR confidence intervals, thresholds, and explicit undefined or
+  ineligible states.
+- **Drug Explorer and Drug Reaction Exploration** — resolved report and case counts plus bounded
+  co-reported reaction profiles.
+- **Historical Trends and Historical Comparison** — per-quarter analysis over completed loaded
+  source ingestions, with population exclusions and archive provenance.
+- **Signal Comparison** — ordered comparison of two to four existing signal details without a
+  cross-pair score or ranking.
+- **Source-Term Discovery** — case-insensitive, SQL-bounded suggestions from source values; no
+  automatic synonym or clinical-concept claims.
+- **Reproducible Analysis Links** — validated, configuration-only URLs for Historical Trends and
+  Signal Comparison. Links do not store results or freeze a dataset.
+- **FAERS ingestion foundation** — immutable checksummed archives, streaming parsing, quality
+  reports, normalized persistence, rejected-record tracking, and restartable idempotent batches.
+- **Synthetic demo environment** — opt-in deterministic `DEMO` records for exercising the stack;
+  these are not FDA data or scientific findings.
+- **Operational safeguards** — request IDs, privacy-conscious structured timing, safe metadata,
+  sanitized errors, trusted-host validation, security headers, and restricted development
+  containers.
 
-## Docker setup
+## Architecture
 
-1. Copy the environment template, then set both blank password values to different, strong
-   development-only secrets. Compose rejects missing or empty passwords:
+PharmaSense is a typed modular monolith. Statistical calculations and SQL population rules remain
+outside HTTP route handlers and React components.
+
+```text
+React + TypeScript + Vite
+          │  typed JSON over bounded read-only endpoints
+          ▼
+FastAPI routes, validation, security, and observability
+          │
+          ▼
+Analytics service and reusable SQL/statistical modules
+          │
+          ▼
+SQLAlchemy + PyMySQL
+          │
+          ▼
+MySQL 8.4 versioned FAERS and provenance records
+```
+
+The supporting data path is:
+
+```text
+FDA quarterly ASCII archive
+          │
+          ▼
+Streaming parser and data-quality reporting
+          │
+          ▼
+Restartable, checksum-gated persistence
+          │
+          ▼
+Alembic-managed normalized schema
+```
+
+Docker Compose provides the reproducible development topology. GitHub Actions validates Python and
+frontend quality gates, initializes a clean MySQL database with Alembic, and runs a synthetic
+frontend-to-MySQL verification job.
+
+### Technology
+
+| Area | Implemented technology |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, native browser URL/history APIs |
+| API | Python 3.12, FastAPI, Pydantic settings |
+| Analytics | SQLAlchemy queries and explicit Python statistical calculations |
+| Storage | MySQL 8.4 with PyMySQL |
+| Migrations | Alembic |
+| Testing | Pytest, Vitest, Testing Library, coverage enforcement |
+| Quality | Ruff, strict mypy, ESLint, TypeScript project checks |
+| Runtime verification | Docker Compose and an opt-in synthetic live-stack test |
+| CI | GitHub Actions with pinned action revisions and MySQL service containers |
+
+## Quick start with Docker Compose
+
+This is the shortest complete path. It requires Docker with Compose.
+
+1. Create an ignored local environment file and set different, development-only values for
+   `MYSQL_PASSWORD` and `MYSQL_ROOT_PASSWORD`:
 
    ```bash
    cp .env.example .env
    ```
 
-2. Start the stack:
+2. Validate and start MySQL, FastAPI, and the Vite frontend:
 
    ```bash
-   docker compose config
+   make compose-config
    docker compose up --build --detach
    docker compose ps
    ```
 
-3. Open the frontend at <http://localhost:5173>. The API is at
-   <http://localhost:8000>; liveness and readiness are available at
-   `/api/v1/health` and `/api/v1/ready`.
-
-The API container applies Alembic migrations before starting. MySQL is not exposed outside the
-Compose network by default.
-
-4. Load the explicitly synthetic, idempotent demonstration population and verify the complete
-   frontend-client -> API -> analytics-service -> MySQL path:
+3. Load the explicitly synthetic demonstration population and run the live frontend-to-database
+   check:
 
    ```bash
    make compose-seed-demo
    make verify-live
    ```
 
-   The seed contains 20 deterministic `DEMO`-named reports and is not FDA data or evidence. See
-   the [local full-stack runbook](docs/architecture/local-full-stack.md) for its provenance,
-   safety boundary, live-test behavior, and manual dashboard checks.
+4. Open <http://127.0.0.1:5173>. The API is available at
+   <http://127.0.0.1:8000>, with liveness and database-backed readiness at
+   `/api/v1/health` and `/api/v1/ready`.
 
-5. Stop the services while preserving the database volume:
+5. Stop the stack without deleting the database volume:
 
    ```bash
-   docker compose down
+   make down
    ```
 
-## Local development
+The API container applies `alembic upgrade head` before startup. MySQL is not published to the
+host. The synthetic seed is transactional, idempotent, rejected in production mode, and contains
+20 deterministic records whose displayed terms begin with `DEMO`.
 
-Create and activate a virtual environment, then install the pinned project dependencies:
+See the [local full-stack runbook](docs/architecture/local-full-stack.md) for service ordering,
+health checks, logs, manual verification, and safe teardown.
+
+## Local development without Docker
+
+The frontend overview can run without the API, but analytics require a reachable MySQL 8.4 database.
+For a fully local stack, install MySQL separately and configure an ignored `.env`; when starting from
+`.env.example`, change `MYSQL_HOST=mysql` to `MYSQL_HOST=127.0.0.1`.
+
+Install the pinned dependencies:
 
 ```bash
 python3.12 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements.lock
-python -m pip install --no-deps -e .
-pnpm --dir apps/web install --frozen-lockfile
+make install
+make install-frontend
 ```
 
-Set database variables in your shell or an ignored `.env`. Then run:
+Apply migrations and optionally load the synthetic demo data:
 
 ```bash
-alembic upgrade head
-uvicorn pharmasense.api.main:app --reload
-pnpm --dir apps/web dev
+make migrate
+make seed-demo
 ```
 
-The liveness endpoint confirms the process can serve requests. The readiness endpoint performs
-`SELECT 1` against MySQL and returns HTTP 503 if configuration or connectivity is unavailable.
-Interactive development documentation at `/docs` includes the Phase 3A endpoints:
+Start the API and frontend in separate terminals with the virtual environment active:
 
-- `GET /api/v1/info`
+```bash
+make api
+```
+
+```bash
+make web
+```
+
+The Vite development server proxies `/api` to `VITE_API_PROXY_TARGET`, which defaults to
+`http://localhost:8000`. Never put secrets in `VITE_*` variables because Vite exposes them to the
+browser bundle.
+
+## Verification
+
+The normal quality suite does not require a running database:
+
+```bash
+make check
+pnpm --dir apps/web build
+git diff --check
+```
+
+`make check` runs Ruff lint and formatting checks, strict mypy, backend tests with coverage, ESLint,
+strict frontend type checking, and Vitest with coverage. MySQL-dependent integration tests skip
+locally unless `TEST_DATABASE_URL` is configured; CI supplies a clean MySQL service and applies and
+checks migrations.
+
+With a migrated API, loaded synthetic data, and the frontend dependencies installed, run:
+
+```bash
+make verify-live
+```
+
+That opt-in test uses the real frontend client, FastAPI services, SQLAlchemy queries, and MySQL. It is
+not part of the default local unit suite.
+
+## API surface
+
+The versioned read-only API includes:
+
+- `GET /api/v1/health`, `/ready`, and `/info`
 - `GET /api/v1/signals`
 - `GET /api/v1/signals/{drug_name}/reactions/{reaction_term}`
 - `GET /api/v1/drugs`
 - `GET /api/v1/drugs/{drug_name}/reactions`
+- `GET /api/v1/discovery/drugs` and `/discovery/reactions`
 - `GET /api/v1/source-snapshots`
-- `GET /api/v1/historical/signals/{drug_name}/reactions/{reaction_term}` (requires
-  `start_quarter` and `end_quarter` in `YYYYQn` form)
+- `GET /api/v1/historical/signals/{drug_name}/reactions/{reaction_term}`
 
-API responses include `X-Request-ID`. Request and analytics completion events are emitted as
-privacy-conscious JSON logs containing stable operation fields and durations, never request
-bodies, query strings, credentials, database URLs, or raw FAERS records.
+Interactive OpenAPI documentation is available at `/docs` while the API is running. Responses
+retain request correlation and security headers. Logs exclude query strings, request bodies,
+credentials, database URLs, SQL, and raw FAERS records.
 
-API responses also include `nosniff`, anti-framing, no-referrer, and restrictive browser
-permissions headers. `APP_TRUSTED_HOSTS` controls accepted hostnames. Production configuration
-must set it explicitly, cannot use the unrestricted `*` host, and cannot use debug logging. See
-the security design for reverse-proxy, TLS, CSP/HSTS, static frontend hosting, and remaining
-deployment responsibilities.
+## Repository map
 
-All analytics are research-only reporting patterns. They do not establish causality or incidence
-and must not be used for clinical decision-making.
-
-Historical endpoints analyze only report rows currently represented by completed ingestions in
-the requested source-quarter range. They return explicit selected-quarter and exclusion metadata;
-they do not reconstruct a true historical “as-of” database state. See the
-[historical quarter analytics design](docs/architecture/historical-quarter-analytics.md).
-
-The dashboard opens on an API-independent project overview that explains the implemented
-capabilities, research workflow, and scientific boundaries. Accessible controls enter the existing
-Signal Explorer, Drug Explorer, Historical Trends, and Signal Comparison workspaces without
-duplicating their analytics behavior. See the
-[project overview and demo design](docs/architecture/project-overview.md).
-Signal Comparison requests two to four existing signal details and displays
-their server-derived metrics without a cross-pair score or ranking. Historical Trends consumes the
-Phase 5A source inventory and historical signal APIs,
-shows the exact selected population and archive provenance, and performs no statistical
-calculations in the browser. Its accessible Historical Comparison displays API-supplied PRR, ROR,
-pair counts, and ROR intervals while keeping the complete tabular results. See the
-[Historical Trends frontend design](docs/architecture/historical-trends-frontend.md).
-Signal Comparison architecture and safeguards are documented in the
-[Signal Comparison design](docs/architecture/signal-comparison.md).
-Historical Trends and Signal Comparison also offer bounded, optional source-term suggestions after
-two characters. Returned spellings come from the resolved FAERS population and are not normalized
-concepts or clinical recommendations; see the
-[source-term discovery design](docs/architecture/source-term-discovery.md).
-Complete Historical Trends and Signal Comparison forms can also be bookmarked or copied as
-configuration-only links. Opening a link restores the form without storing or automatically
-replaying results; a later analysis uses currently loaded data and may produce different values.
-See [reproducible analysis URLs](docs/architecture/reproducible-analysis-urls.md).
-
-Vite uses
-`VITE_API_BASE_URL=/api/v1` by default and proxies `/api` requests to
-`VITE_API_PROXY_TARGET=http://localhost:8000` during local development. Do not place secrets in
-`VITE_*` variables because Vite bundles them into browser code.
-
-For a standalone local MySQL installation, apply migrations, seed the optional demonstration
-population, and start both processes:
-
-```bash
-alembic upgrade head
-make seed-demo
-uvicorn pharmasense.api.main:app --reload
-pnpm --dir apps/web dev
+```text
+apps/web/                  React, TypeScript, Vite, and frontend tests
+packages/pharmasense/      API, analytics, database, demo, telemetry, and ingestion package
+migrations/                Alembic environment and versioned schema migrations
+tests/                     Backend unit and optional service-backed integration tests
+docs/architecture/         Design decisions, scientific query rules, and runbooks
+docs/data-sources/         Official-source research and checked source manifests
+docs/scientific-methods/   FAERS interpretation and scientific limitations
+infra/docker/              API and frontend development Dockerfiles
+data/                      Ignored local raw and processed data locations
 ```
 
-Then `make verify-live` exercises the real API. The normal `make check` suite does not require a
-running database or backend; the guarded live dashboard test runs only through `verify-live`.
+## Documentation map
 
-The API container runs `alembic upgrade head` before startup. For local MySQL, apply the same
-migration explicitly and inspect the active revision:
+### Product and runtime
 
-```bash
-alembic upgrade head
-alembic current
-```
+- [Architecture overview](docs/architecture/overview.md)
+- [Project overview and demo experience](docs/architecture/project-overview.md)
+- [Frontend dashboard](docs/architecture/frontend-dashboard.md)
+- [Local full-stack workflow](docs/architecture/local-full-stack.md)
+- [Security and deployment readiness](docs/architecture/security-deployment.md)
+- [Privacy-conscious observability](docs/architecture/observability.md)
 
-Revision `20261103_0002` creates the Phase 1C FAERS persistence tables. Its downgrade removes those
-tables and is destructive once data exists; use a verified backup and prefer a forward migration.
+### Analytics and reproducibility
 
-## Quality checks
+- [Read-only analytics API](docs/architecture/analytics-api.md)
+- [Latest report-version resolution](docs/architecture/faers-latest-version.md)
+- [Drug–reaction counting rules](docs/architecture/faers-drug-reaction-analytics.md)
+- [Signal detection and PRR/ROR](docs/architecture/faers-signal-detection.md)
+- [Confidence intervals and prioritization](docs/architecture/faers-signal-prioritization.md)
+- [Historical source-quarter analytics](docs/architecture/historical-quarter-analytics.md)
+- [Historical Trends frontend](docs/architecture/historical-trends-frontend.md)
+- [Signal Comparison](docs/architecture/signal-comparison.md)
+- [Source-term discovery](docs/architecture/source-term-discovery.md)
+- [Reproducible analysis URLs](docs/architecture/reproducible-analysis-urls.md)
 
-```bash
-make check
-```
+### Data engineering and scientific context
 
-This runs Ruff lint/format checks, mypy, pytest with coverage, ESLint, TypeScript, and Vitest.
-GitHub Actions runs the same checks and verifies the migration against a clean MySQL service.
+- [FAERS ingestion architecture](docs/architecture/faers-ingestion.md)
+- [Normalized FAERS schema](docs/architecture/faers-schema.md)
+- [Official FDA data sources](docs/data-sources/official-sources.md)
+- [Quarterly extract facts and format](docs/data-sources/faers-quarterly-extracts.md)
+- [FAERS scientific limitations](docs/scientific-methods/faers-limitations.md)
 
-## Dependency locking
+## Responsible use and limitations
 
-Runtime and development dependencies are exactly pinned in `pyproject.toml`; their resolved
-Python 3.12 development environment is captured in `requirements.lock`. The API image installs
-the smaller runtime-only `requirements-runtime.lock`. Frontend transitive dependencies are locked
-in `apps/web/pnpm-lock.yaml`. When dependencies change, update both applicable Python locks or the
-frontend declaration and lock together, then verify installation in a clean environment.
+FAERS reports are spontaneous and may be incomplete, delayed, duplicated, inaccurate, or
+unverified. Public data does not provide a reliable exposure denominator, so PharmaSense cannot
+calculate incidence.
 
-## Data policy
+PRR, ROR, confidence intervals, and prioritization describe disproportional reporting patterns.
+They do not establish that a drug caused an event, quantify patient-specific or comparative risk,
+or support diagnosis, prescribing, or treatment changes. Results may be affected by selective and
+stimulated reporting, follow-up submissions, duplicates, underreporting, confounding by indication,
+concomitant products, missing information, small counts, and terminology changes.
+
+Historical analysis uses records currently represented by completed loaded source-quarter
+ingestions. It is reproducible for that declared loaded population, but it is not necessarily a
+true historical “as-of” reconstruction of everything FDA knew at that time. Reproducible URLs store
+configuration rather than results; rerunning a link after data changes may produce different output.
+
+Synthetic demonstration records are clearly labelled test fixtures. They are not FDA records,
+safety findings, or clinical evidence.
+
+## Configuration, data, and dependencies
+
+Configuration is environment-based. `.env`, raw FDA archives, processed outputs, coverage,
+dependencies, and build artifacts are ignored by Git. Secret values are never hardcoded; Compose
+requires non-empty database passwords.
 
 Only public, redistributable sources may be used. Never import restricted patient data or export
-data from controlled research environments. Downloaded archives and derived datasets belong in
-the ignored `data/raw` and `data/processed` directories.
+data from controlled research workspaces. Local source archives belong under ignored `data/raw` and
+derived outputs under ignored `data/processed`.
 
-## FAERS 2023 Q4 local inspection
+Python dependencies are exactly pinned in `pyproject.toml` and resolved in `requirements.lock`; the
+API image uses `requirements-runtime.lock`. Frontend dependencies are locked by
+`apps/web/pnpm-lock.yaml`. Update declarations and applicable lockfiles together.
 
-The raw archive is intentionally not distributed with the repository. After independently
-downloading the approved file from FDA, verify its SHA-256 is
-`7e6b72848ed670900eaf78d24983c845f077091f71ffa7b9c310d590faebac62` and place it at
-`data/raw/faers/2023Q4/faers_ascii_2023Q4.zip`. Then run:
-
-```bash
-python -m pharmasense.ingestion.faers.cli \
-  data/raw/faers/2023Q4/faers_ascii_2023Q4.zip \
-  --json-report data/processed/faers/2023Q4/quality-report.json \
-  --markdown-report data/processed/faers/2023Q4/quality-report.md
-```
-
-Both outputs are aggregate local artifacts and remain ignored. Identical reruns leave existing
-report files unchanged. See [Phase 1B verification](docs/phase-1b-verification.md) for observed
-archive facts and limitations.
-
-## FAERS 2023 Q4 database ingestion
-
-Apply migrations and validate the archive before loading:
-
-```bash
-alembic upgrade head
-python -m pharmasense.ingestion.faers.ingest_cli \
-  data/raw/faers/2023Q4/faers_ascii_2023Q4.zip \
-  --manifest docs/data-sources/manifests/faers-2023q4-ascii.json \
-  --year 2023 --quarter 4 \
-  --json-report data/processed/faers/2023Q4/validation.json \
-  --markdown-report data/processed/faers/2023Q4/validation.md \
-  --validate-only
-```
-
-Run or resume the database load with:
-
-```bash
-make ingest-faers
-# Optional smaller transactions:
-make ingest-faers FAERS_BATCH_SIZE=1000
-```
-
-The equivalent `pharmasense-faers-ingest` command accepts `--batch-size`. `--max-batches N`
-intentionally pauses after `N` committed batches for operationally bounded runs; invoking the same
-command again resumes from the last committed source row. A completed rerun is a reported no-op.
-Reconciliation is written under ignored `data/processed` storage as JSON and Markdown.
-
-Ingestion requires a database at Alembic revision `20261103_0002`. It validates the committed
-manifest checksum before database mutation and never chooses a “latest” quarter implicitly.
-
-## License
-
-The source code is available under the MIT License. Source datasets retain their own terms and
-must be reviewed independently before redistribution.
+The source code is licensed under the [MIT License](LICENSE). Source datasets retain their own terms
+and must be reviewed independently before redistribution.
