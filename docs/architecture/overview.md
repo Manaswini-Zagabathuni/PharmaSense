@@ -116,6 +116,11 @@ only validated user configuration, restore forms without submitting analytics, a
 results or source records. The format and rejection rules are documented in
 [the reproducible analysis URL design](reproducible-analysis-urls.md).
 
+Phase 7A adds an API-independent project overview as the default browser experience. It explains the
+implemented workspaces, research workflow, and scientific limitations, then routes users into the
+existing analytics components without duplicating their behavior. See
+[the project overview and demo design](project-overview.md).
+
 ## Runtime topology
 
 Phase 0 runs three services:

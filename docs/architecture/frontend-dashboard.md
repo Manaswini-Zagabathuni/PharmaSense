@@ -102,3 +102,8 @@ Both workspaces can serialize a complete validated form into a bookmarkable URL 
 through an accessible control. Restoration fills the form but does not automatically execute the
 analysis. See [reproducible analysis URLs](reproducible-analysis-urls.md) for the parameter contract,
 validation rules, and configuration-versus-result boundary.
+
+The dashboard now opens on an API-independent project overview that introduces the implemented
+capabilities and the Discover → Explore → Analyze → Compare → Reproduce workflow. Its controls route
+to these same workspace components, and the persistent navigation provides an accessible return
+path. See [project overview and demo experience](project-overview.md).

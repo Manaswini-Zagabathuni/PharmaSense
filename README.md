@@ -144,8 +144,12 @@ the requested source-quarter range. They return explicit selected-quarter and ex
 they do not reconstruct a true historical “as-of” database state. See the
 [historical quarter analytics design](docs/architecture/historical-quarter-analytics.md).
 
-The dashboard opens on Signal Explorer and provides Drug Explorer, Historical Trends, and Signal
-Comparison workspaces. Signal Comparison requests two to four existing signal details and displays
+The dashboard opens on an API-independent project overview that explains the implemented
+capabilities, research workflow, and scientific boundaries. Accessible controls enter the existing
+Signal Explorer, Drug Explorer, Historical Trends, and Signal Comparison workspaces without
+duplicating their analytics behavior. See the
+[project overview and demo design](docs/architecture/project-overview.md).
+Signal Comparison requests two to four existing signal details and displays
 their server-derived metrics without a cross-pair score or ranking. Historical Trends consumes the
 Phase 5A source inventory and historical signal APIs,
 shows the exact selected population and archive provenance, and performs no statistical

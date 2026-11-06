@@ -67,5 +67,7 @@ describe('comparison analysis URLs', () => {
 
 test('selects only recognized workspaces', () => {
   expect(workspaceFromSearch('?workspace=comparison')).toBe('comparison')
-  expect(workspaceFromSearch('?workspace=unknown')).toBe('signals')
+  expect(workspaceFromSearch('?workspace=signals')).toBe('signals')
+  expect(workspaceFromSearch('?workspace=unknown')).toBe('overview')
+  expect(workspaceFromSearch('')).toBe('overview')
 })

@@ -14,6 +14,7 @@ describe.skipIf(!liveEnabled)('live full-stack dashboard', () => {
     expect(readiness.status).toBe(200)
 
     render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Signals' }))
 
     const signalDrug = await screen.findByText('DEMO DRUG ALPHA', {}, { timeout: 15_000 })
     const signalRow = signalDrug.closest('tr')

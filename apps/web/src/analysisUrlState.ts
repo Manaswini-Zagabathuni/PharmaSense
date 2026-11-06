@@ -1,4 +1,4 @@
-export type AnalysisWorkspace = 'signals' | 'drugs' | 'historical' | 'comparison'
+export type AnalysisWorkspace = 'overview' | 'signals' | 'drugs' | 'historical' | 'comparison'
 
 export interface HistoricalUrlState {
   drugName: string
@@ -29,13 +29,14 @@ export function isValidAnalysisTerm(value: string | null): value is string {
 export function workspaceFromSearch(search: string): AnalysisWorkspace {
   const workspace = new URLSearchParams(search).get('workspace')
   if (
+    workspace === 'signals' ||
     workspace === 'drugs' ||
     workspace === 'historical' ||
     workspace === 'comparison'
   ) {
     return workspace
   }
-  return 'signals'
+  return 'overview'
 }
 
 export function hasHistoricalUrlParameters(search: string): boolean {
@@ -106,7 +107,7 @@ function baseAnalysisUrl(workspace: AnalysisWorkspace): URL {
   const url = new URL(window.location.href)
   url.search = ''
   url.hash = ''
-  if (workspace !== 'signals') url.searchParams.set('workspace', workspace)
+  if (workspace !== 'overview') url.searchParams.set('workspace', workspace)
   return url
 }
 

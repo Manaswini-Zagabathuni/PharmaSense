@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 
 import type { Signal } from './api/types'
@@ -49,9 +49,99 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url
 }
 
+function renderSignalWorkspace() {
+  window.history.replaceState(null, '', '/?workspace=signals')
+  return render(<App />)
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+test('renders the API-independent project overview and scientific limitations first', () => {
+  const fetchMock = vi.fn()
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(<App />)
+
+  expect(
+    screen.getByRole('heading', {
+      name: 'Detect patterns. Evaluate signals. Explore evidence.',
+    }),
+  ).toBeInTheDocument()
+  expect(screen.getByText(/research-oriented pharmacovigilance analytics platform/)).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Signal Explorer' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Drug Explorer' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Historical Trends' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Signal Comparison' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Source-Term Discovery' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Reproducible Analysis Links' })).toBeInTheDocument()
+  expect(
+    screen.getByRole('heading', {
+      name: 'Discover → Explore → Analyze → Compare → Reproduce',
+    }),
+  ).toBeInTheDocument()
+
+  const limitations = screen
+    .getByRole('heading', { name: 'Reporting evidence requires careful interpretation' })
+    .closest('aside')
+  expect(limitations).not.toBeNull()
+  expect(within(limitations as HTMLElement).getByText(/spontaneous reporting system/)).toHaveTextContent(
+    'do not establish causality, incidence, or clinical risk',
+  )
+  expect(fetchMock).not.toHaveBeenCalled()
+
+  const navigation = screen.getByRole('navigation', { name: 'Analytics workspaces' })
+  for (const name of ['Overview', 'Signals', 'Drugs', 'Historical Trends', 'Signal Comparison']) {
+    expect(within(navigation).getByRole('button', { name })).toBeEnabled()
+  }
+  expect(within(navigation).getByRole('button', { name: 'Overview' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
+test('navigates from overview capability controls into every existing workspace', () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = requestUrl(input)
+      if (url.includes('/source-snapshots?')) {
+        return Promise.resolve(jsonResponse({ items: [], returned_count: 0, limit: 200 }))
+      }
+      if (url.includes('/drugs?')) {
+        return Promise.resolve(
+          jsonResponse({
+            items: [],
+            returned_count: 0,
+            limit: 25,
+            offset: 0,
+            research_notice: researchNotice,
+          }),
+        )
+      }
+      return Promise.resolve(
+        jsonResponse({ items: [], returned_count: 0, limit: 25, research_notice: researchNotice }),
+      )
+    }),
+  )
+  render(<App />)
+
+  fireEvent.click(screen.getByRole('button', { name: 'Open Signal Explorer' }))
+  expect(screen.getByRole('heading', { name: 'Signal Explorer' })).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Open Drug Explorer' }))
+  expect(screen.getByRole('heading', { name: 'Drug Explorer' })).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Open Historical Trends' }))
+  expect(screen.getByRole('heading', { name: 'Historical Trends' })).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Overview' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Open Signal Comparison' }))
+  expect(screen.getByRole('heading', { name: 'Signal Comparison' })).toBeInTheDocument()
 })
 
 test('renders prioritized signals and loads an encoded signal detail', async () => {
@@ -69,7 +159,7 @@ test('renders prioritized signals and loads an encoded signal detail', async () 
   })
   vi.stubGlobal('fetch', fetchMock)
 
-  render(<App />)
+  renderSignalWorkspace()
 
   expect(screen.getByRole('heading', { name: 'Signal Explorer' })).toBeInTheDocument()
   expect(await screen.findByText('Drug A')).toBeInTheDocument()
@@ -96,7 +186,7 @@ test('shows an unavailable state and can retry the signal request', async () => 
     )
   vi.stubGlobal('fetch', fetchMock)
 
-  render(<App />)
+  renderSignalWorkspace()
 
   expect(await screen.findByText('Service unavailable')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -111,7 +201,7 @@ test('renders a clear empty signal state and applies API-supported filters', asy
   )
   vi.stubGlobal('fetch', fetchMock)
 
-  render(<App />)
+  renderSignalWorkspace()
 
   expect(await screen.findByText('No prioritized signals meet these thresholds')).toBeInTheDocument()
   fireEvent.change(screen.getByLabelText('Results'), { target: { value: '10' } })
@@ -226,7 +316,7 @@ test('renders signal diagnostics, undefined metrics, and close behavior', async 
     }),
   )
 
-  render(<App />)
+  renderSignalWorkspace()
   fireEvent.click(await screen.findByRole('button', { name: 'Inspect' }))
 
   expect(await screen.findByText('Not evaluable')).toBeInTheDocument()
@@ -254,7 +344,7 @@ test('handles missing signal details and failed detail requests', async () => {
     }),
   )
 
-  render(<App />)
+  renderSignalWorkspace()
   fireEvent.click(await screen.findByRole('button', { name: 'Inspect' }))
 
   expect(await screen.findByText('Pair not observed')).toBeInTheDocument()
@@ -345,7 +435,7 @@ test('retries a failed signal detail request', async () => {
     }),
   )
 
-  render(<App />)
+  renderSignalWorkspace()
   fireEvent.click(await screen.findByRole('button', { name: 'Inspect' }))
   expect(await screen.findByText('Service unavailable')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
